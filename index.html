@@ -10,141 +10,299 @@
 <link rel="apple-touch-icon" href="./icon-192.png">
 <script src="./supabase.min.js"></script>
 <style>
+/* ============ Terranova CRM — redesign tokens (per design handover) ============ */
+@font-face{
+  font-family:'Plus Jakarta Sans';
+  src:url('./PlusJakartaSans.woff2') format('woff2-variations');
+  font-weight:200 800;
+  font-display:swap;
+}
 :root{
-  --green:#8CC63F; --green-deep:#78B833; --charcoal:#2B2A29;
-  --silver:#B2B3B3; --lgrey:#D9DADA; --bg:#F5F6F4; --white:#fff;
-  --red:#D64541; --amber:#E8A33D; --ok:#5BA829;
-  --radius:12px; --shadow:0 1px 3px rgba(43,42,41,.10),0 4px 14px rgba(43,42,41,.06);
+  --brand:#8CC63F; --brand-deep:#78B833; --brand-dark:#5C8F27;
+  --charcoal:#2B2A29; --charcoal-deep:#18170F;
+  --silver:#B2B3B3; --lightgrey:#D9DADA;
+  --green:#5BA829; --amber:#E8A33D; --red:#D64541;
+  --bg:#F5F6F1; --surface:#FFFFFF; --sunken:#ECEEE6; --border:#E2E4D9;
+  --text:#221F1C; --text-2:#65675C; --text-3:#9A9C90;
+  --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:24px; --pill:999px;
+  --sh-sm:0 1px 2px rgba(34,31,28,.08);
+  --sh-md:0 6px 20px rgba(34,31,28,.10);
+  --sh-lg:0 24px 56px rgba(34,31,28,.18);
+  --glow:0 10px 28px rgba(140,198,63,.38);
+  --font:'Plus Jakarta Sans',-apple-system,"Segoe UI",Arial,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--charcoal);font-size:15px;-webkit-font-smoothing:antialiased}
-button{font:inherit;cursor:pointer;border:none;background:none}
-input,select,textarea{font:inherit;color:inherit;width:100%;padding:9px 11px;border:1.5px solid var(--lgrey);border-radius:8px;background:#fff;outline:none}
-input:focus,select:focus,textarea:focus{border-color:var(--green)}
-label{display:block;font-size:12.5px;font-weight:600;color:#666;margin:10px 0 4px}
-a{color:var(--green-deep)}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:9px;font-weight:700;font-size:14px;transition:filter .15s}
-.btn:active{filter:brightness(.92)}
-.btn-primary{background:var(--green);color:var(--charcoal)}
-.btn-dark{background:var(--charcoal);color:#fff}
-.btn-ghost{background:#fff;border:1.5px solid var(--lgrey);color:var(--charcoal)}
-.btn-danger{background:#fff;border:1.5px solid #e5b5b3;color:var(--red)}
-.btn-sm{padding:5px 10px;font-size:12.5px;border-radius:7px}
-.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:700}
-.muted{color:#8a8a88}.small{font-size:12.5px}
-.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-.grid{display:grid;gap:12px}
-h2{font-size:19px;margin-bottom:2px}
-.pagehead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+button,input,select,a{transition:background .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease,opacity .16s ease}
+a{color:var(--brand-dark)} a:hover{color:var(--brand-deep)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--lightgrey);border-radius:999px}
+.tnum{font-variant-numeric:tabular-nums}
+
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.85)}}
+@keyframes frameIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes breathe{0%,100%{opacity:.28;transform:translateX(-50%) scale(1)}50%{opacity:.42;transform:translateX(-50%) scale(1.08)}}
+@keyframes sparkTwinkle{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:.9;transform:scale(1.15)}}
+@keyframes ringGrow{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+@keyframes toastPop{from{opacity:0;transform:translate(-50%,10px) scale(.96)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes sheetUp{from{transform:translateY(30px);opacity:.4}to{transform:translateY(0);opacity:1}}
+
+/* ---------- form primitives ---------- */
+input,select,textarea{font:inherit;color:var(--text);width:100%;min-height:44px;padding:0 13px;
+  border:1.5px solid var(--border);border-radius:9px;background:var(--sunken);outline:none}
+textarea{padding:10px 13px;min-height:70px}
+input:focus,select:focus,textarea:focus{background:#fff;border-color:var(--brand-deep);box-shadow:0 0 0 3px rgba(140,198,63,.25)}
+input:disabled,select:disabled{background:var(--border);color:var(--text-2);cursor:not-allowed}
+label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:700;color:var(--text-2);margin-top:12px}
+label .hint{font-weight:600;color:var(--text-3)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;
+  border-radius:10px;font-weight:800;font-size:13.5px}
+.btn:active{transform:translateY(0);filter:brightness(.95)}
+.btn-primary{background:linear-gradient(180deg,var(--brand),var(--brand-deep));color:var(--charcoal);box-shadow:var(--sh-sm)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:var(--glow)}
+.btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{background:var(--sunken)}
+.btn-plain{color:var(--text-2)}
+.btn-danger{background:#fff;border:1px solid var(--red);color:var(--red)}
+.btn-sm{min-height:36px;padding:0 13px;font-size:12.5px;border-radius:9px}
+.chip{display:inline-block;padding:3px 8px;border-radius:var(--pill);font-size:10px;font-weight:800;letter-spacing:.05em}
+.chip-brand{color:var(--brand-dark);background:rgba(140,198,63,.16)}
+.badge{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10.5px;font-weight:700;background:var(--sunken);color:var(--text)}
+.badge-removed{background:rgba(214,69,65,.15);color:var(--red);border-radius:var(--pill);padding:3px 9px;font-weight:800}
+.muted{color:var(--text-3)}.small{font-size:12.5px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--sh-sm)}
+.card h3{font-size:15px;font-weight:800;margin-bottom:4px}
+.lift{transition:transform .18s ease,box-shadow .18s ease}
+.lift:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
+.hairline{height:1px;background:var(--border)}
+.row{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--border)}
+.row:first-of-type{border-top:none}
+.eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--text-3);text-transform:uppercase}
+.viewwrap{animation:frameIn .5s cubic-bezier(.16,1,.3,1) both}
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.pagehead h2{font-size:20px;font-weight:800}
+@media(min-width:768px){.pagehead h2{font-size:24px}}
+.pagehead .sub{font-size:13px;color:var(--text-2)}
 
 /* ---------- login ---------- */
-#login{min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px;
-  background:linear-gradient(160deg,#2B2A29 0%,#3a3937 55%,#4a4a3d 100%)}
-#login .card{width:100%;max-width:380px;padding:30px 26px}
-#login .logo{display:flex;justify-content:center;margin-bottom:6px}
-#login .tag{ text-align:center;color:#8a8a88;font-size:13px;margin-bottom:20px}
-#login .bar{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--green-deep));margin:14px -26px 18px}
-#loginerr{color:var(--red);font-size:13px;margin-top:10px;min-height:18px;font-weight:600}
+#login{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;position:relative;overflow:hidden;
+  background:radial-gradient(120% 90% at 50% -10%,#2E3B1C 0%,var(--charcoal-deep) 55%,#0F0E09 100%)}
+#login .glow{position:absolute;top:-40px;left:50%;width:260px;height:260px;border-radius:50%;background:var(--brand);filter:blur(70px);animation:breathe 5s ease-in-out infinite}
+#login .rings{position:absolute;top:38px;left:50%;transform:translateX(-50%);opacity:.14;pointer-events:none}
+#login .card{position:relative;width:100%;max-width:380px;border:none;border-radius:20px;box-shadow:var(--sh-lg);padding:32px 26px;
+  animation:frameIn .6s .1s cubic-bezier(.16,1,.3,1) both}
+#login .lgo svg{height:34px;width:auto;display:block}
+#login .eyebrow{margin-top:10px;letter-spacing:.08em;font-size:12px}
+#login .hairline{margin:16px 0}
+#lbtn{width:100%;min-height:48px;margin-top:18px;box-shadow:var(--glow)}
+#lbtn:hover{box-shadow:0 14px 32px rgba(140,198,63,.48)}
+#loginerr{font-size:13px;font-weight:600;color:var(--red);margin-top:12px;min-height:18px}
+#login .foot{position:relative;margin-top:26px;font-size:12px;color:#9BA394;text-align:center}
 
 /* ---------- shell ---------- */
 #app{display:none;min-height:100%}
-header{position:sticky;top:0;z-index:40;background:#fff;box-shadow:0 1px 0 var(--lgrey)}
-.hwrap{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:10px 16px}
-.hwrap .logo svg{height:30px;width:auto;display:block}
+header{position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:1px solid var(--border)}
+.hwrap{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:14px 18px}
+@media(min-width:768px){.hwrap{padding:14px 32px}}
+.hwrap .logo svg{height:20px;width:auto;display:block}
+@media(min-width:768px){.hwrap .logo svg{height:24px}}
 .hspace{flex:1}
 #whoami{text-align:right;line-height:1.25}
-#whoami .n{font-weight:700;font-size:13.5px}
-#whoami .r{font-size:11.5px;color:#8a8a88}
-#statepick{width:auto;padding:6px 28px 6px 10px;font-size:13px;font-weight:600}
-nav{background:#fff;border-top:1px solid #eee}
-.nwrap{max-width:1200px;margin:0 auto;display:flex}
-nav button{flex:1;padding:10px 4px 12px;font-size:12px;font-weight:700;color:#8a8a88;border-bottom:3px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px}
-nav button svg{width:21px;height:21px}
-nav button.on{color:var(--charcoal);border-bottom-color:var(--green)}
-main{max-width:1200px;margin:0 auto;padding:18px 16px 90px}
-@media(min-width:768px){ main{padding-bottom:40px} }
+#whoami .n{font-weight:700;font-size:13px}
+#whoami .r{font-size:11px;color:var(--text-3)}
+#statepick{width:auto;min-height:38px;padding:0 28px 0 12px;font-size:13px;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+#logout{min-height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:0 12px;font-size:12px;font-weight:700}
+nav{background:var(--surface)}
+.nwrap{max-width:1280px;margin:0 auto;display:flex}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 12px;
+  font-size:10.5px;font-weight:700;color:var(--text-3);border-top:2px solid transparent}
+nav button svg{width:20px;height:20px}
+nav button.on{color:var(--brand-dark);border-top-color:var(--brand)}
+main{max-width:1280px;margin:0 auto;padding:18px;padding-bottom:96px}
+@media(min-width:768px){
+  main{padding:28px 32px 48px}
+  nav{border-bottom:1px solid var(--border)}
+  nav button{flex:0 0 auto;flex-direction:row;gap:7px;font-size:14px;padding:12px 18px;border-top:none;border-bottom:2px solid transparent}
+  nav button.on{border-bottom-color:var(--brand)}
+}
 @media(max-width:767px){
-  nav{position:fixed;bottom:0;left:0;right:0;border-top:1px solid var(--lgrey);padding-bottom:env(safe-area-inset-bottom);z-index:50}
-  nav button{border-bottom:none;border-top:3px solid transparent}
-  nav button.on{border-top-color:var(--green)}
+  nav{position:fixed;bottom:0;left:0;right:0;border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom);z-index:50}
 }
 
 /* ---------- dashboard ---------- */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
-.kpi .lbl{font-size:12px;font-weight:700;color:#8a8a88;text-transform:uppercase;letter-spacing:.4px}
-.kpi .val{font-size:24px;font-weight:800;margin-top:4px}
-.kpi .sub{font-size:12px;color:#8a8a88;margin-top:2px}
-.prog{height:8px;background:var(--lgrey);border-radius:8px;overflow:hidden;margin-top:8px}
-.prog>div{height:100%;background:linear-gradient(90deg,var(--green),var(--green-deep));border-radius:8px}
-.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:baseline}
-.d-g{background:var(--ok)}.d-a{background:var(--amber)}.d-r{background:var(--red)}
-.row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #f0f0ee}
-.row:last-child{border-bottom:none}
-table{width:100%;border-collapse:collapse}
-th{font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:#8a8a88;text-align:left;padding:7px 8px;border-bottom:1.5px solid var(--lgrey)}
-td{padding:9px 8px;border-bottom:1px solid #f0f0ee;font-size:13.5px;vertical-align:top}
+.kpis{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+@media(min-width:900px){.kpis{gap:16px}}
+.kpi{position:relative;overflow:hidden;flex:1 1 150px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:16px;box-shadow:var(--sh-sm);transition:transform .18s ease,box-shadow .18s ease}
+.kpi:hover{transform:translateY(-3px);box-shadow:var(--sh-md)}
+@media(min-width:900px){.kpi{padding:20px}}
+.kpi .accent{position:absolute;top:0;left:0;right:0;height:4px;background:var(--lightgrey)}
+.kpi.live .accent{background:linear-gradient(90deg,var(--brand),var(--brand-deep))}
+.kpi .val{font-size:26px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums}
+@media(min-width:900px){.kpi .val{font-size:32px;margin-top:8px}}
+.kpi .sub{font-size:12px;color:var(--text-2);margin-top:2px}
+.kpi-ring{flex:1 1 100%;display:flex;align-items:center;gap:16px;background:var(--charcoal);border:none;
+  border-radius:18px;padding:18px;box-shadow:var(--sh-md);color:#fff}
+.kpi-ring:hover{box-shadow:var(--sh-lg)}
+@media(min-width:900px){.kpi-ring{flex:1 1 300px;border-radius:var(--radius-lg);padding:20px}}
+.kpi-ring .eyebrow{color:#C7CBB8}
+.kpi-ring .val{font-size:22px;color:#fff}
+.kpi-ring .sub{color:#B6BBA6}
+.kpi-ring svg{flex-shrink:0;animation:ringGrow .6s cubic-bezier(.16,1,.3,1) both}
+.kpi-ring circle.arc{transition:stroke-dashoffset .9s cubic-bezier(.16,1,.3,1)}
+.dashgrid{display:grid;gap:14px}
+@media(min-width:900px){.dashgrid{grid-template-columns:1.3fr 1fr;gap:16px;align-items:start}}
+.dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;display:inline-block}
+.d-g{background:var(--green);box-shadow:0 0 0 4px rgba(91,168,41,.13);animation:pulseDot 2s infinite}
+.d-a{background:var(--amber);box-shadow:0 0 0 4px rgba(232,163,61,.13)}
+.d-r{background:var(--red);box-shadow:0 0 0 4px rgba(214,69,65,.13)}
 
 /* ---------- pipeline ---------- */
-.kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:14px;-webkit-overflow-scrolling:touch}
-.kcol{min-width:240px;width:240px;flex:0 0 auto;background:#EFF1ED;border-radius:var(--radius);padding:10px}
-.kcol h4{font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;display:flex;justify-content:space-between;padding:2px 4px 8px}
-.kcol h4 .sum{color:#8a8a88;font-weight:600}
-.kcard{background:#fff;border-radius:10px;box-shadow:var(--shadow);padding:11px 12px;margin-bottom:9px;border-left:4px solid var(--green)}
-.kcard.b2b{border-left-color:var(--charcoal)}
-.kcard .t{font-weight:700;font-size:13.5px;line-height:1.3}
-.kcard .m{font-size:12px;color:#8a8a88;margin-top:3px}
-.kcard .amt{font-weight:800;font-size:14px;margin-top:5px}
-.kcard .mv{display:flex;justify-content:space-between;margin-top:7px}
-.kcard .mv button{padding:2px 10px;border-radius:6px;background:#F1F3EE;font-weight:800;color:#666}
-.stage-lead{border-left-color:var(--silver)} .stage-qualified{border-left-color:var(--amber)}
-.stage-negotiation{border-left-color:var(--green)} .stage-won{border-left-color:var(--ok)} .stage-lost{border-left-color:var(--red)}
+.seg{display:inline-flex;background:var(--sunken);border-radius:9px;padding:3px;gap:2px}
+.seg button{padding:7px 12px;border-radius:7px;font-size:12.5px;font-weight:700;color:var(--text-2)}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--sh-sm)}
+.kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;margin:0 -18px;padding-left:18px;padding-right:18px;-webkit-overflow-scrolling:touch}
+@media(min-width:1024px){.kanban{display:grid;grid-template-columns:repeat(5,1fr);overflow:visible;margin:0;padding:0}}
+.kcol{width:250px;flex-shrink:0}
+@media(min-width:1024px){.kcol{width:auto}}
+.kcolhead{border-top:4px solid var(--silver);background:var(--surface);border-radius:0 0 12px 12px;padding:10px 12px;
+  display:flex;justify-content:space-between;box-shadow:var(--sh-sm);font-size:12px;font-weight:800;letter-spacing:.03em}
+.kcolhead .sum{color:var(--text-3);font-variant-numeric:tabular-nums}
+.kcolhead.has .sum{color:var(--text)}
+.kc-lead .kcolhead{border-top-color:var(--silver)}
+.kc-qualified .kcolhead{border-top-color:var(--amber)}
+.kc-negotiation .kcolhead{border-top-color:var(--brand)}
+.kc-won .kcolhead{border-top-color:var(--brand-deep);background:linear-gradient(135deg,var(--brand),var(--brand-deep));box-shadow:var(--glow);color:#fff}
+.kc-won .kcolhead .sum{color:#fff}
+.kc-lost .kcolhead{border-top-color:var(--red)}
+.kcards{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.kempty{padding:22px 8px;text-align:center;color:var(--text-3);font-size:13px;position:relative}
+.kc-won .kempty{color:var(--brand-dark);font-weight:700;font-size:12.5px}
+.spark{position:absolute;animation:sparkTwinkle 2.4s ease-in-out infinite}
+.kcard{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--brand);border-radius:12px;
+  padding:14px;box-shadow:var(--sh-sm);display:flex;flex-direction:column;gap:8px;cursor:pointer;
+  transition:transform .18s ease,box-shadow .18s ease}
+.kcard:hover{transform:translateY(-3px);box-shadow:var(--sh-md)}
+.kcard .t{font-size:14px;font-weight:700;line-height:1.3}
+.kcard .meta{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);flex-wrap:wrap}
+.kcard .na{font-size:12.5px;color:var(--brand-dark);font-weight:600}
+.kcard .amtrow{display:flex;justify-content:space-between;align-items:baseline}
+.kcard .amt{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.kcard .date{font-size:12px;color:var(--text-3)}
+.kcard .foot{display:flex;justify-content:space-between;align-items:center}
+.kcard .foot .owner{font-size:12px;font-weight:600;color:var(--text-2)}
+.kcard .mv{width:30px;height:30px;border-radius:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.kcard .mv.back{border:1px solid var(--border);background:var(--sunken)}
+.kcard .mv.fwd{background:var(--charcoal);color:#fff}
+.kcard .mv:disabled{opacity:.25;cursor:default}
+.stage-lead{border-left-color:var(--silver)}.stage-qualified{border-left-color:var(--amber)}
+.stage-negotiation{border-left-color:var(--brand)}.stage-won{border-left-color:var(--brand-deep)}.stage-lost{border-left-color:var(--red)}
+
+/* ---------- my day ---------- */
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+#checkin.done{background:var(--surface);border:1.5px solid var(--brand);color:var(--brand-dark);box-shadow:none}
+#checkin.done .dot{width:8px;height:8px;background:var(--green);box-shadow:none;animation:pulseDot 2s infinite}
+.tick{width:19px;height:19px;border:2px solid var(--border);border-radius:6px;flex-shrink:0}
+.tick.done{border:none;background:var(--brand);color:var(--charcoal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}
+.donepill{font-size:11px;font-weight:800;color:var(--brand-dark);background:rgba(140,198,63,.16);padding:4px 10px;border-radius:var(--pill);flex-shrink:0}
+
+/* ---------- dealers ---------- */
+.dsearch{display:flex;gap:8px;margin-bottom:10px}
+.dsearch input{min-height:42px;background:var(--surface)}
+.switchrow{display:flex;flex-direction:row;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--text-2);margin-bottom:12px;cursor:pointer}
+.switch{width:34px;height:20px;border-radius:var(--pill);background:var(--border);position:relative;transition:background .16s ease;flex-shrink:0}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:var(--sh-sm);transition:left .16s ease}
+.switchrow input{display:none}
+.switchrow input:checked + .switch{background:var(--brand)}
+.switchrow input:checked + .switch::after{left:16px}
+.dealerlist{display:grid;gap:12px}
+@media(min-width:900px){.dealerlist{grid-template-columns:1fr 1fr}}
+.dcard{display:flex;flex-direction:column;gap:8px}
+.dcard .nm{font-size:15px;font-weight:800}
+.dcard .actionsrow{display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border)}
+.dcard .actionsrow .btn{flex:1;min-height:36px;font-size:12.5px}
+.audit{background:var(--sunken);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:12px}
+.audit .arow{display:flex;justify-content:space-between;gap:8px}
+
+/* ---------- team ---------- */
+.tcard .toprow{display:flex;justify-content:space-between;align-items:baseline}
+.tcard .nm{font-size:15px;font-weight:800}
+.tcard .slabchip{font-size:10.5px;font-weight:800;color:var(--text-2);background:var(--sunken);padding:3px 9px;border-radius:var(--pill)}
+.tcard .nums{display:flex;justify-content:space-between;font-size:12.5px;color:var(--text-2);font-weight:600;margin-top:8px}
+.tcard .nums b{color:var(--text);font-variant-numeric:tabular-nums}
+.pbar{height:10px;border-radius:var(--pill);background:var(--sunken);overflow:hidden;margin-top:8px}
+.pbar > div{height:100%;background:linear-gradient(90deg,var(--brand),var(--brand-deep));border-radius:var(--pill);transition:width .9s cubic-bezier(.16,1,.3,1)}
+.tcard .incrow{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
+.tcard .inc{font-size:16px;font-weight:800;color:var(--brand-dark);font-variant-numeric:tabular-nums}
+.slabcard{background:var(--charcoal);border:none;color:#fff;margin-top:12px}
+.slabcard h3{color:#fff}
+.slabcard .sub{font-size:11.5px;color:#B6BBA6;margin-bottom:8px}
+.slabcard .srow{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid rgba(255,255,255,.12);font-size:13px}
+.slabcard .srate{font-weight:800;color:var(--brand)}
+.teamtable{overflow:hidden;padding:0}
+.tthead{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.6fr .9fr 1fr;gap:12px;padding:12px 20px;background:var(--sunken);
+  font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--text-2);text-transform:uppercase}
+.ttrow{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.6fr .9fr 1fr;gap:12px;padding:14px 20px;border-top:1px solid var(--border);align-items:center;font-size:13.5px}
+.only-mobile{display:block}.only-desktop{display:none}
+@media(min-width:900px){.only-mobile{display:none}.only-desktop{display:block}}
 
 /* ---------- modal / toast ---------- */
-#modalroot{position:fixed;inset:0;z-index:100;display:none;align-items:flex-end;justify-content:center;background:rgba(43,42,41,.45)}
-@media(min-width:600px){#modalroot{align-items:center}}
-.modal{background:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:20px}
-@media(min-width:600px){.modal{border-radius:16px}}
-.modal h3{margin-bottom:4px}
+#modalroot{position:fixed;inset:0;z-index:100;display:none;align-items:flex-end;justify-content:center;background:rgba(24,23,15,.5)}
+@media(min-width:600px){#modalroot{align-items:center;padding:24px}}
+.modal{background:var(--surface);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;
+  padding:22px 20px;animation:sheetUp .32s cubic-bezier(.16,1,.3,1) both}
+@media(min-width:600px){.modal{border-radius:var(--radius-xl);padding:26px 24px}}
+.modal h3{font-size:18px;font-weight:800;margin-bottom:2px}
+.msec{margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
+.msec:first-of-type{border-top:none;padding-top:0;margin-top:8px}
+.msec .eyebrow{margin-bottom:-4px}
 .mrow{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
-.mfoot{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
-#toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:200;background:var(--charcoal);color:#fff;
-  padding:10px 18px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw}
-#toast.show{opacity:1}
-.empty{padding:30px 10px;text-align:center;color:#8a8a88}
-.seg{display:inline-flex;background:#EFF1ED;border-radius:9px;padding:3px}
-.seg button{padding:5px 14px;border-radius:7px;font-size:12.5px;font-weight:700;color:#8a8a88}
-.seg button.on{background:#fff;color:var(--charcoal);box-shadow:var(--shadow)}
-.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.filters input,.filters select{width:auto;min-width:120px}
-.audit{background:#FAFAF8;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12.5px}
+.mfoot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+#toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:200;background:var(--charcoal);color:#fff;
+  padding:11px 20px;border-radius:var(--pill);font-size:13.5px;font-weight:700;opacity:0;pointer-events:none;max-width:90vw;box-shadow:var(--sh-lg)}
+#toast.show{opacity:1;animation:toastPop .3s cubic-bezier(.16,1,.3,1) both}
+#toast.win{background:var(--brand-deep)}
+#toast.err{background:var(--red)}
+.empty{padding:16px 8px;text-align:center;color:var(--text-3);font-size:13px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 </style>
 </head>
 <body>
 
 <div id="login">
+  <div class="glow"></div>
+  <svg class="rings" width="220" height="220" viewBox="0 0 220 220">
+    <circle cx="110" cy="110" r="60" fill="none" stroke="#8CC63F" stroke-width="1"/>
+    <circle cx="110" cy="110" r="86" fill="none" stroke="#8CC63F" stroke-width="1"/>
+    <circle cx="110" cy="110" r="108" fill="none" stroke="#8CC63F" stroke-width="1"/>
+  </svg>
   <div class="card">
-    <div class="logo"><svg width="245" height="63" viewBox="0 0 245 63" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M54.3416 9.10739C51.5086 6.35142 48.1149 4.14472 44.4056 2.71319C40.7021 1.27438 36.7064 0.593583 32.7554 0.70926C28.8029 0.821297 24.909 1.74749 21.3668 3.33057C17.8205 4.93367 14.6779 7.21939 12.0683 10.0086C6.89227 15.5213 4.16481 22.9655 4.44528 30.2159C4.56234 33.8427 5.37678 37.4219 6.83283 40.7178C8.29045 44.0119 10.3784 47.0249 12.9802 49.5545C15.5662 52.0983 18.6449 54.1459 22.0142 55.5715C25.3833 57.0004 29.0454 57.7985 32.7557 57.9126C40.1781 58.1858 47.7799 55.5309 53.4415 50.4435C56.2703 47.9119 58.627 44.8221 60.2577 41.356C61.8753 37.8911 62.8238 34.0824 62.9346 30.2159C63.0525 26.3521 62.3546 22.4445 60.8823 18.8232C59.4181 15.1964 57.1597 11.8776 54.3421 9.10739H54.3416ZM54.3416 9.10739C57.178 11.8621 59.4618 15.1566 61.048 18.7559C62.6363 22.3561 63.5155 26.2634 63.6317 30.2159C63.914 38.1212 60.9166 46.217 55.2427 52.2059C52.4241 55.2 48.9757 57.6906 45.1227 59.414C41.2686 61.1229 37.0411 62.1102 32.7554 62.2238C28.4729 62.3395 24.1435 61.5947 20.1271 60.0306C18.1229 59.2435 16.1892 58.2682 14.3825 57.1013C12.5792 55.9299 10.8951 54.5837 9.35944 53.0952C6.30671 50.1001 3.85265 46.4998 2.26016 42.5673C0.656676 38.6416 -0.106435 34.4055 0.0119338 30.2159C0.12009 26.0235 1.13723 21.8872 2.88474 18.1174C4.64928 14.3414 7.18584 10.9863 10.2708 8.20563C16.3762 2.67966 24.677 -0.265546 32.7554 0.0188368C36.7981 0.132954 40.7938 0.995462 44.4756 2.54865C48.156 4.10002 51.5251 6.33426 54.3416 9.10713V9.10739Z" fill="#8CC63F"/><path fill-rule="evenodd" clip-rule="evenodd" d="M28.3627 30.4128H16.5598C16.7207 27.1473 18.5061 24.0718 22.7911 23.8818C25.7328 23.8818 28.6742 23.8818 31.6157 23.8818C34.5572 23.8818 37.4986 23.8818 40.4404 23.8818C44.7253 24.0718 46.5104 27.1471 46.6717 30.4128H35.2345V50.8981C12.9039 52.1136 3.24698 26.5218 19.2335 12.75C8.17629 25.9173 12.4918 42.4959 28.3627 46.8712V30.4128Z" fill="#78B833"/><path fill-rule="evenodd" clip-rule="evenodd" d="M32.5275 9.91406C41.8839 9.91406 49.4716 17.5081 49.5014 26.8874C47.8658 19.1514 40.8847 13.3373 32.5195 13.3373C24.1817 13.3373 17.219 19.114 15.5547 26.8131C15.6238 17.4682 23.1958 9.91406 32.5278 9.91406H32.5275Z" fill="#D9DADA"/><path fill-rule="evenodd" clip-rule="evenodd" d="M50.8011 18.3984C57.8292 31.3817 51.8045 45.0459 38.1973 49.5162C38.1973 48.0293 38.1973 47.2617 38.1973 45.7748C50.8362 40.9791 55.4858 30.0614 50.8011 18.3984Z" fill="#B2B3B3"/><path fill-rule="evenodd" clip-rule="evenodd" d="M141.694 21.2698C142.926 18.8225 146.739 18.1447 149.256 18.1447C153.841 18.1447 158.517 19.6736 158.517 25.0097V38.9778L157.437 38.3987C156.631 37.9662 155.739 37.8694 154.838 37.8694C152.936 37.8694 151.049 38.4858 149.084 38.4858C144.925 38.4858 140.815 36.9568 140.815 32.1348C140.815 30.6903 141.243 29.389 142.249 28.334C142.517 28.0536 142.812 27.8044 143.127 27.5817L143.019 27.4383C142.295 26.4794 141.711 25.4659 141.447 24.3361C141.028 25.3998 140.311 26.382 139.474 27.0547L138.281 28.0138V26.4823C138.281 24.0221 135.984 23.6385 134.029 23.9382V38.3142H133.295C131.208 38.3142 126.807 37.7564 126.807 34.9427V17.6173L127.854 18.1117C128.686 18.5043 129.621 18.8633 130.555 18.8633C131.334 18.8633 132.17 18.6697 132.933 18.5176C133.969 18.311 134.974 18.1437 136.035 18.1437C138.414 18.1437 141.057 18.9219 141.694 21.2689V21.2698ZM172.477 34.9433C172.477 37.5123 178.231 37.581 178.231 37.581V24.9411C178.231 20.1799 174.19 18.8782 170.354 18.8782C168.538 18.8782 166.929 19.5978 165.25 19.5978C162.99 19.5978 161.483 18.7756 161.483 18.7756V34.9433C161.483 37.581 167.237 37.581 167.237 37.581V23.2973C167.237 23.2973 168.675 22.9891 169.874 22.9891C171.826 22.9891 172.477 23.8453 172.477 25.4555V34.9436L172.477 34.9433ZM90.8929 16.6177C94.3181 16.6177 94.7632 14.2542 94.7632 11.8908C94.7632 11.8908 93.1537 12.4388 90.3448 12.4388H78.837C76.0281 12.4388 74.3839 11.8908 74.3839 11.8908C74.3839 14.2542 74.8977 16.6177 78.2883 16.6177H81.5766V35.0459C81.5766 37.6839 87.4676 37.6839 87.4676 37.6839V16.6177H90.8925H90.8929ZM98.7019 25.832C98.7019 23.9479 99.25 22.9205 100.962 22.9205C102.469 22.9205 103.052 23.7424 103.052 24.9757C103.052 26.4486 101.887 26.8595 100.654 26.8595C99.9349 26.8595 99.2156 26.7225 98.7019 26.5856V25.832ZM101.956 37.7522C106.305 37.7522 109.08 35.7999 109.08 33.2995C109.08 32.3403 108.669 31.3128 107.847 30.1821C107.813 31.9635 105.689 33.5734 102.127 33.5734C100.038 33.5734 98.7022 32.7171 98.7022 30.7988V30.2507C98.7022 30.2507 99.764 30.7988 101.51 30.7988C107.23 30.7988 108.771 27.9902 108.771 24.9757C108.771 21.3106 106.511 18.8782 101.202 18.8782C95.8933 18.8782 92.9478 21.3106 92.9478 25.3179V31.3128C92.9478 35.3544 96.0986 37.7525 101.956 37.7525V37.7522ZM117.916 37.581V23.3313C120.485 22.7492 123.637 23.263 123.637 26.4826C123.637 26.4826 125.726 24.8045 125.726 22.4064C125.726 19.7005 123.088 18.8782 120.657 18.8782C118.499 18.8782 116.752 19.5978 115.177 19.5978C114.32 19.5978 113.395 19.3576 112.162 18.7756V34.9433C112.162 37.581 117.916 37.581 117.916 37.581H117.916ZM133.295 37.581V23.3313C135.864 22.7492 139.015 23.263 139.015 26.4826C139.015 26.4826 141.104 24.8045 141.104 22.4064C141.104 19.7005 138.467 18.8782 136.035 18.8782C133.877 18.8782 132.131 19.5978 130.555 19.5978C129.698 19.5978 128.774 19.3576 127.541 18.7756V34.9433C127.541 37.581 133.294 37.581 133.294 37.581H133.295ZM152.133 33.5044C152.133 33.5044 150.865 33.8809 149.633 33.8809C148.468 33.8809 147.304 33.5387 147.304 31.9285C147.304 29.7363 151.208 30.2844 152.133 28.8455V33.5041V33.5044ZM149.188 22.9541C151.413 22.9541 152.03 23.9133 152.03 24.7359C150.455 27.0304 141.549 25.8663 141.549 32.1348C141.549 36.4509 145.249 37.7522 149.085 37.7522C151.106 37.7522 153.024 37.1355 154.838 37.1355C155.798 37.1355 156.825 37.2381 157.784 37.7522V25.0097C157.784 21.0364 154.838 18.8782 149.256 18.8782C146.893 18.8782 142.029 19.5635 142.029 23.0234C142.029 24.0852 142.337 25.3179 143.604 26.9967C143.604 23.7427 146.55 22.9544 149.187 22.9544L149.188 22.9541ZM199.467 25.3176C199.467 21.3103 196.624 18.8779 190.596 18.8779C184.499 18.8779 181.656 21.3103 181.656 25.3176V31.3125C181.656 35.3541 184.499 37.7522 190.596 37.7522C196.624 37.7522 199.467 35.3544 199.467 31.3125V25.3176ZM193.713 30.7984C193.713 32.6825 193.165 33.7443 190.596 33.7443C187.959 33.7443 187.411 32.6825 187.411 30.7984V25.8317C187.411 23.9476 187.959 22.9201 190.596 22.9201C193.165 22.9201 193.713 23.9476 193.713 25.8317V30.7984ZM219.47 19.0495C219.47 19.0495 213.887 19.0495 213.51 21.5845L212.825 26.3797C212.14 31.1409 210.461 32.5112 210.461 32.5112C210.461 32.5112 208.852 31.4494 208.133 26.3797L207.447 21.5845C207.071 19.0495 201.522 19.0495 201.522 19.0495L202.31 25.8663C203.234 33.9841 210.393 38.163 210.461 38.1977C210.53 38.1633 217.654 33.9841 218.647 25.8663L219.469 19.0495H219.47ZM231.765 33.5047C231.765 33.5047 230.498 33.8812 229.265 33.8812C228.1 33.8812 226.936 33.539 226.936 31.9289C226.936 29.7366 230.84 30.2847 231.765 28.8458V33.5044V33.5047ZM228.82 22.9544C231.046 22.9544 231.663 23.9136 231.663 24.7362C230.087 27.0307 221.182 25.8666 221.182 32.1351C221.182 36.4512 224.881 37.7525 228.717 37.7525C230.738 37.7525 232.656 37.1359 234.471 37.1359C235.43 37.1359 236.457 37.2385 237.416 37.7525V25.0101C237.416 21.0367 234.471 18.8785 228.888 18.8785C226.525 18.8785 221.661 19.5638 221.661 23.0237C221.661 24.0855 221.969 25.3182 223.236 26.997C223.236 23.743 226.182 22.9548 228.819 22.9548L228.82 22.9544ZM151.261 24.494C151.033 23.7735 149.78 23.6883 149.187 23.6883C146.964 23.6883 144.411 24.2225 144.339 26.8811C144.935 26.5985 145.56 26.3739 146.177 26.1829C147.141 25.8841 150.356 25.2431 151.261 24.494ZM167.971 23.9026V38.3148H167.237C165.15 38.3148 160.749 37.7571 160.749 34.9433V17.5315L161.834 18.1317C162.757 18.6293 164.227 18.8643 165.25 18.8643C166.937 18.8643 168.572 18.145 170.354 18.145C174.765 18.145 178.965 19.8374 178.965 24.9414V38.3226L178.224 38.3148C176.166 38.2931 171.744 37.7075 171.744 34.9433V25.4552C171.744 24.0858 171.233 23.7226 169.874 23.7226C169.272 23.7226 168.599 23.7945 167.971 23.9023V23.9026ZM88.2015 17.3516V38.4174H87.4679C85.3745 38.4174 80.8431 37.8785 80.8431 35.0459V17.3516H78.2886C74.7216 17.3516 73.6504 15.0525 73.6504 11.8908V10.8672L74.6167 11.1948C75.8018 11.5871 77.6114 11.705 78.837 11.705H90.3448C91.5465 11.705 93.3667 11.5894 94.5276 11.1961L95.4968 10.8675V11.8911C95.4968 15.0622 94.4968 17.3519 90.8929 17.3519H88.2015V17.3516ZM108.078 29.253L108.44 29.7509C109.19 30.7819 109.814 31.9955 109.814 33.2998C109.814 33.6546 109.767 34.0078 109.674 34.3503C108.816 37.5175 104.801 38.4861 101.956 38.4861C97.2853 38.4861 92.2143 36.8419 92.2143 31.3128V25.3179C92.2143 20.1116 96.5469 18.1447 101.203 18.1447C105.765 18.1447 109.506 19.9873 109.506 24.9757C109.506 26.8342 108.98 28.2343 108.078 29.253H108.078ZM99.4792 31.2953C99.7122 32.529 100.849 32.8395 102.127 32.8395C103.667 32.8395 107.073 32.2548 107.113 30.1678L107.114 30.1079C105.678 31.1115 103.705 31.5323 101.51 31.5323C100.912 31.5323 100.166 31.4601 99.4792 31.2953ZM118.65 23.9386V38.3145H117.916C115.829 38.3145 111.429 37.7567 111.429 34.943V17.6177L112.475 18.112C113.308 18.5046 114.243 18.8636 115.177 18.8636C115.956 18.8636 116.792 18.6701 117.555 18.5179C118.591 18.3114 119.596 18.144 120.656 18.144C123.385 18.144 126.459 19.1676 126.459 22.4058C126.459 24.127 125.428 25.9828 124.096 27.054L122.902 28.0132V26.4817C122.902 24.0214 120.605 23.6378 118.65 23.9376V23.9386ZM200.2 25.3179V31.3128C200.2 36.8824 195.415 38.4861 190.596 38.4861C185.767 38.4861 180.923 36.9138 180.923 31.3128V25.3179C180.923 19.738 185.785 18.1447 190.596 18.1447C195.397 18.1447 200.2 19.7694 200.2 25.3179ZM210.44 31.4332C211.358 30.1021 211.923 27.4988 212.098 26.2764L212.783 21.4809C213.157 18.8627 217.366 18.3162 219.469 18.3162H220.297L219.375 25.9543C218.933 29.6195 217.243 32.878 214.75 35.5636C213.853 36.5302 211.998 38.2475 210.79 38.8535L210.461 39.0189L210.132 38.8535C208.924 38.2468 207.07 36.5292 206.173 35.5616C203.684 32.8751 202.004 29.6159 201.581 25.9508L200.699 18.3162H201.522C203.623 18.3162 207.8 18.8672 208.173 21.4809L208.858 26.2764C209.011 27.3479 209.567 30.1597 210.441 31.4332H210.44ZM222.759 27.582L222.651 27.4386C221.658 26.123 220.927 24.7045 220.927 23.0234C220.927 19.1314 225.851 18.1447 228.888 18.1447C233.474 18.1447 238.15 19.6736 238.15 25.0097V38.9778L237.07 38.3987C236.263 37.9662 235.371 37.8694 234.471 37.8694C232.568 37.8694 230.681 38.4858 228.717 38.4858C224.558 38.4858 220.448 36.9568 220.448 32.1348C220.448 30.6903 220.875 29.389 221.882 28.334C222.149 28.0536 222.444 27.8044 222.759 27.5817L222.759 27.582ZM230.893 24.494C230.665 23.7735 229.412 23.6883 228.819 23.6883C226.596 23.6883 224.043 24.2225 223.971 26.8811C224.567 26.5985 225.192 26.3739 225.809 26.1829C226.773 25.8841 229.988 25.2431 230.893 24.494ZM99.4354 26.0016C99.8388 26.0796 100.254 26.1259 100.654 26.1259C101.496 26.1259 102.318 25.9725 102.318 24.9757C102.318 24.0159 101.928 23.654 100.962 23.654C99.5565 23.654 99.4354 24.6074 99.4354 25.832V26.0016ZM151.399 32.936V30.2394C149.94 30.8389 148.037 30.9289 148.037 31.9289C148.037 32.9787 148.711 33.1477 149.632 33.1477C150.18 33.1477 150.818 33.0654 151.399 32.936ZM192.979 30.7988V25.832C192.979 24.0331 192.408 23.654 190.596 23.654C188.761 23.654 188.145 23.9988 188.145 25.832V30.7988C188.145 32.632 188.753 33.0107 190.596 33.0107C192.416 33.0107 192.979 32.597 192.979 30.7988ZM231.031 32.936V30.2394C229.572 30.8389 227.669 30.9289 227.669 31.9289C227.669 32.9787 228.343 33.1477 229.265 33.1477C229.813 33.1477 230.451 33.0654 231.031 32.936Z" fill="#D9DADA"/><path d="M90.8843 17.4808C94.3092 17.4808 94.7543 15.1174 94.7543 12.7539C94.7543 12.7539 93.1448 13.3023 90.3362 13.3023H78.829C76.0208 13.3023 74.377 12.7539 74.377 12.7539C74.377 15.117 74.891 17.4808 78.2813 17.4808H81.569V35.9074C81.569 38.5448 87.4593 38.5448 87.4593 38.5448V17.4808H90.8843ZM98.6923 26.6941C98.6923 24.8104 99.2404 23.7829 100.953 23.7829C102.46 23.7829 103.042 24.6049 103.042 25.8379C103.042 27.3108 101.878 27.7219 100.645 27.7219C99.9254 27.7219 99.2064 27.585 98.6927 27.4481L98.6923 26.6941ZM101.946 38.6134C106.295 38.6134 109.069 36.6614 109.069 34.161C109.069 33.2018 108.658 32.1743 107.836 31.0442C107.802 32.8253 105.679 34.4349 102.117 34.4349C100.028 34.4349 98.6923 33.5786 98.6923 31.6606V31.1125C98.6923 31.1125 99.7544 31.6606 101.501 31.6606C107.22 31.6606 108.761 28.852 108.761 25.8379C108.761 22.1731 106.5 19.7413 101.192 19.7413C95.8838 19.7413 92.9386 22.1731 92.9386 26.1804V32.1743C92.9386 36.2159 96.0893 38.6134 101.946 38.6134ZM117.905 38.4421V24.1941C120.474 23.612 123.625 24.1258 123.625 27.3451C123.625 27.3451 125.714 25.667 125.714 23.2695C125.714 20.5636 123.077 19.7417 120.645 19.7417C118.488 19.7417 116.741 20.4609 115.166 20.4609C114.309 20.4609 113.385 20.2211 112.152 19.639V35.8055C112.152 38.4425 117.905 38.4421 117.905 38.4421ZM133.282 38.4421V24.1941C135.851 23.612 139.002 24.1258 139.002 27.3451C139.002 27.3451 141.091 25.667 141.091 23.2695C141.091 20.5636 138.454 19.7417 136.022 19.7417C133.865 19.7417 132.118 20.4609 130.543 20.4609C129.686 20.4609 128.762 20.2211 127.528 19.639V35.8055C127.528 38.4425 133.282 38.4421 133.282 38.4421ZM152.118 34.3665C152.118 34.3665 150.852 34.7434 149.618 34.7434C148.454 34.7434 147.289 34.4009 147.289 32.791C147.289 30.5991 151.194 31.1469 152.118 29.7086V34.3665ZM149.173 23.8173C151.399 23.8173 152.016 24.7764 152.016 25.5983C150.44 27.8932 141.536 26.7288 141.536 32.9966C141.536 37.312 145.235 38.6134 149.07 38.6134C151.091 38.6134 153.009 37.997 154.824 37.997C155.783 37.997 156.81 38.0996 157.769 38.6134V25.8722C157.769 21.8992 154.824 19.7413 149.241 19.7413C146.879 19.7413 142.015 20.4266 142.015 23.8856C142.015 24.9473 142.324 26.1804 143.591 27.8585C143.591 24.6049 146.536 23.8173 149.173 23.8173Z" fill="#78B833"/><path fill-rule="evenodd" clip-rule="evenodd" d="M144.262 37.6568L147.772 34.1847C148.219 34.6262 148.915 34.7489 149.611 34.7489C150.844 34.7489 152.111 34.3721 152.111 34.3721V29.8928L157.618 24.4453C157.713 24.893 157.761 25.3708 157.761 25.8781V38.6193C156.803 38.1055 155.775 38.0029 154.816 38.0029C153.001 38.0029 151.083 38.6193 149.062 38.6193C147.323 38.6193 145.613 38.3519 144.262 37.6572L144.262 37.6568Z" fill="#2B2A29"/><path d="M172.456 35.8071C172.456 38.3758 178.209 38.4441 178.209 38.4441V25.8058C178.209 21.0449 174.168 19.7432 170.333 19.7432C168.518 19.7432 166.908 20.4625 165.23 20.4625C162.969 20.4625 161.463 19.6406 161.463 19.6406V35.8071C161.463 38.4441 167.217 38.4441 167.217 38.4441V24.1616C167.217 24.1616 168.655 23.8535 169.854 23.8535C171.806 23.8535 172.456 24.7097 172.456 26.3196V35.8071H172.456ZM199.443 26.1826C199.443 22.1753 196.601 19.7436 190.573 19.7436C184.477 19.7436 181.634 22.1753 181.634 26.1826V32.1766C181.634 36.2182 184.477 38.6156 190.573 38.6156C196.601 38.6156 199.443 36.2182 199.443 32.1766V26.1826ZM193.69 31.6625C193.69 33.5465 193.142 34.608 190.573 34.608C187.936 34.608 187.388 33.5462 187.388 31.6625V26.6964C187.388 24.8127 187.936 23.7852 190.573 23.7852C193.142 23.7852 193.69 24.8127 193.69 26.6964V31.6625ZM219.444 19.9145C219.444 19.9145 213.861 19.9145 213.485 22.4492L212.8 27.2444C212.115 32.0053 210.436 33.3753 210.436 33.3753C210.436 33.3753 208.827 32.3135 208.108 27.2444L207.423 22.4492C207.047 19.9145 201.498 19.9145 201.498 19.9145L202.286 26.7307C203.21 34.8479 210.368 39.0264 210.436 39.0607C210.505 39.0264 217.629 34.8479 218.622 26.7307L219.444 19.9145ZM231.738 34.3685C231.738 34.3685 230.471 34.7453 229.238 34.7453C228.074 34.7453 226.909 34.4028 226.909 32.7929C226.909 30.601 230.814 31.1488 231.738 29.7105V34.3685H231.738ZM228.793 23.8192C231.019 23.8192 231.636 24.7783 231.636 25.6002C230.06 27.8951 221.156 26.7307 221.156 32.9985C221.156 37.314 224.855 38.6153 228.691 38.6153C230.711 38.6153 232.629 37.9989 234.444 37.9989C235.403 37.9989 236.431 38.1016 237.389 38.6153V25.8741C237.389 21.9011 234.444 19.7432 228.862 19.7432C226.499 19.7432 221.635 20.4286 221.635 23.8875C221.635 24.9493 221.944 26.1823 223.211 27.8604C223.211 24.6068 226.156 23.8188 228.793 23.8188V23.8192Z" fill="#2B2A29"/><path fill-rule="evenodd" clip-rule="evenodd" d="M161.463 20.6006L162.169 19.9023C162.273 19.9396 162.386 19.9775 162.51 20.016L162.104 37.0921C161.711 36.7486 161.463 36.3151 161.463 35.768V20.6009V20.6006Z" fill="#2B2A29"/><path fill-rule="evenodd" clip-rule="evenodd" d="M79.6427 47.8172C79.474 47.5116 79.2425 47.2695 78.9476 47.1115C78.6524 46.9539 78.3051 46.8694 77.9156 46.8694C77.4838 46.8694 77.094 46.9642 76.757 47.1643C76.4201 47.3644 76.1569 47.6382 75.9675 48.0069C75.7778 48.3753 75.683 48.7968 75.683 49.2707C75.683 49.7657 75.7778 50.1868 75.9779 50.5556C76.1672 50.9243 76.4304 51.1981 76.7781 51.3982C77.1258 51.5983 77.5259 51.6931 77.9784 51.6931C78.5365 51.6931 79.0001 51.5455 79.3581 51.2402C79.7161 50.9453 79.9479 50.5345 80.0635 49.9975H77.5362V48.8709H81.5167V50.1558C81.4218 50.6718 81.2114 51.1454 80.8851 51.5775C80.5585 52.0091 80.1477 52.3567 79.6423 52.6199C79.1263 52.8831 78.5576 53.0203 77.9257 53.0203C77.22 53.0203 76.5777 52.8624 76.0089 52.5361C75.4298 52.2198 74.9873 51.7776 74.661 51.2091C74.3347 50.6404 74.166 49.9978 74.166 49.2714C74.166 48.5446 74.3347 47.9021 74.661 47.3229C74.9873 46.7545 75.4298 46.3123 76.0089 45.9856C76.5777 45.6697 77.2093 45.5117 77.9153 45.5117C78.7469 45.5117 79.4633 45.7118 80.0742 46.1119C80.685 46.5227 81.1062 47.0911 81.338 47.8179H79.6427V47.8172ZM86.4035 52.9562L84.7817 50.0917H84.0867V52.9562H82.6124V45.6056H85.3715C85.9403 45.6056 86.4245 45.7005 86.8247 45.9005C87.2248 46.1006 87.5304 46.3744 87.7304 46.7111C87.9305 47.0588 88.0253 47.4378 88.0253 47.859C88.0253 48.3433 87.8884 48.7754 87.6038 49.1649C87.3196 49.5546 86.9088 49.8282 86.3507 49.9758L88.1095 52.9559H86.4035V52.9562ZM84.0867 48.9862H85.319C85.7192 48.9862 86.0141 48.8913 86.2141 48.6913C86.4142 48.5019 86.509 48.2384 86.509 47.8907C86.509 47.5537 86.4142 47.2906 86.2141 47.1009C86.0141 46.9218 85.7192 46.827 85.319 46.827H84.0867V48.9859V48.9862ZM90.8371 46.7956V48.6385H93.312V49.8075H90.8371V51.7559H93.6279V52.9562H89.3629V45.5949H93.6279V46.7956H90.8371ZM96.4397 46.7956V48.6385H98.9145V49.8075H96.4397V51.7559H99.2305V52.9562H94.9655V45.5949H99.2305V46.7956H96.4397ZM106.855 52.9562H105.38L102.042 47.9121V52.9562H100.568V45.5949H102.042L105.38 50.6498V45.5949H106.855V52.9562ZM112.289 46.7956V48.6385H114.763V49.8075H112.289V51.7559H115.079V52.9562H110.814V45.5949H115.079V46.7956H112.289ZM122.704 52.9562H121.23L117.891 47.9121V52.9562H116.417V45.5949H117.891L121.23 50.6498V45.5949H122.704V52.9562ZM125.631 46.7956V48.6385H128.106V49.8075H125.631V51.7559H128.422V52.9562H124.157V45.5949H128.422V46.7956H125.631ZM133.55 52.9562L131.929 50.0917H131.233V52.9562H129.759V45.6056H132.518C133.087 45.6056 133.571 45.7005 133.971 45.9005C134.372 46.1006 134.677 46.3744 134.877 46.7111C135.077 47.0588 135.172 47.4378 135.172 47.859C135.172 48.3433 135.035 48.7754 134.751 49.1649C134.466 49.5546 134.056 49.8282 133.498 49.9758L135.256 52.9559H133.55V52.9562ZM131.233 48.9862H132.466C132.866 48.9862 133.161 48.8913 133.361 48.6913C133.561 48.5019 133.656 48.2384 133.656 47.8907C133.656 47.5537 133.561 47.2906 133.361 47.1009C133.161 46.9218 132.866 46.827 132.466 46.827H131.233V48.9859V48.9862ZM141.627 47.8172C141.459 47.5116 141.227 47.2695 140.932 47.1115C140.637 46.9539 140.29 46.8694 139.9 46.8694C139.469 46.8694 139.079 46.9642 138.742 47.1643C138.405 47.3644 138.142 47.6382 137.952 48.0069C137.763 48.3753 137.668 48.7968 137.668 49.2707C137.668 49.7657 137.763 50.1868 137.963 50.5556C138.153 50.9243 138.415 51.1981 138.763 51.3982C139.111 51.5983 139.511 51.6931 139.964 51.6931C140.522 51.6931 140.985 51.5455 141.343 51.2402C141.701 50.9453 141.933 50.5345 142.049 49.9975H139.522V48.8709H143.502V50.1558C143.408 50.6718 143.197 51.1454 142.87 51.5775C142.544 52.0091 142.133 52.3567 141.628 52.6199C141.112 52.8831 140.543 53.0203 139.911 53.0203C139.206 53.0203 138.563 52.8624 137.995 52.5361C137.416 52.2198 136.973 51.7776 136.647 51.2091C136.32 50.6404 136.152 49.9978 136.152 49.2714C136.152 48.5446 136.32 47.9021 136.647 47.3229C136.973 46.7545 137.416 46.3123 137.995 45.9856C138.563 45.6697 139.195 45.5117 139.901 45.5117C140.733 45.5117 141.449 45.7118 142.06 46.1119C142.67 46.5227 143.092 47.0911 143.323 47.8179H141.628L141.627 47.8172ZM150.442 45.6059L147.956 50.3973V52.9566H146.482V50.3973L143.986 45.6059H145.65L147.23 48.9655L148.799 45.6059H150.442ZM159.162 47.8804C159.162 48.2701 159.067 48.6385 158.888 48.9862C158.698 49.3335 158.403 49.6074 158.014 49.8181C157.614 50.0289 157.108 50.1341 156.508 50.1341H155.276V52.9562H153.801V45.6056H156.508C157.076 45.6056 157.561 45.7005 157.961 45.9005C158.361 46.1006 158.667 46.3638 158.866 46.7111C159.066 47.0588 159.161 47.4485 159.161 47.88L159.162 47.8804ZM156.445 48.9438C156.855 48.9438 157.15 48.8489 157.35 48.6596C157.55 48.4805 157.645 48.2173 157.645 47.8804C157.645 47.1643 157.245 46.8063 156.445 46.8063H155.276V48.9441H156.445V48.9438ZM163.995 52.9562L162.373 50.0917H161.678V52.9562H160.204V45.6056H162.963C163.532 45.6056 164.016 45.7005 164.416 45.9005C164.817 46.1006 165.122 46.3744 165.322 46.7111C165.522 47.0588 165.617 47.4378 165.617 47.859C165.617 48.3433 165.48 48.7754 165.196 49.1649C164.911 49.5546 164.501 49.8282 163.943 49.9758L165.701 52.9559H163.995V52.9562ZM161.678 48.9862H162.911C163.311 48.9862 163.606 48.8913 163.806 48.6913C164.006 48.5019 164.101 48.2384 164.101 47.8907C164.101 47.5537 164.006 47.2906 163.806 47.1009C163.606 46.9218 163.311 46.827 162.911 46.827H161.678V48.9859V48.9862ZM168.429 45.6056V52.9562H166.954V45.6056H168.429ZM176.485 45.6056L173.789 52.9562H171.999L169.303 45.6056H170.882L172.904 51.45L174.916 45.6056H176.485ZM181.876 51.5555H178.949L178.465 52.9562H176.917L179.56 45.5949H181.277L183.92 52.9562H182.361L181.877 51.5555H181.876ZM181.476 50.3762L180.413 47.3012L179.349 50.3762H181.476ZM189.912 45.6059V46.7959H187.953V52.9566H186.479V46.7959H184.52V45.6059H189.912H189.912ZM192.46 46.7959V48.6388H194.935V49.8078H192.46V51.7562H195.251V52.9566H190.986V45.5952H195.251V46.7959H192.46ZM200.569 51.7876H202.991V52.9566H199.094V45.6059H200.569V51.7876H200.569ZM205.403 45.6059V52.9566H203.928V45.6059H205.403ZM214.87 45.6059V52.9566H213.396V48.1753L211.426 52.9566H210.31L208.33 48.1753V52.9566H206.856V45.6059H208.53L210.868 51.0712L213.206 45.6059H214.87ZM217.797 45.6059V52.9566H216.323V45.6059H217.797ZM224.253 45.6059V46.7959H222.294V52.9566H220.82V46.7959H218.861V45.6059H224.253ZM226.801 46.7959V48.6388H229.276V49.8078H226.801V51.7562H229.592V52.9566H225.327V45.5952H229.592V46.7959H226.801ZM233.498 45.6059C234.267 45.6059 234.952 45.7532 235.541 46.0585C236.121 46.3637 236.573 46.7852 236.9 47.3433C237.216 47.9014 237.374 48.5543 237.374 49.2914C237.374 50.0289 237.216 50.6708 236.9 51.2185C236.573 51.7766 236.121 52.1978 235.541 52.5034C234.952 52.8086 234.267 52.9562 233.498 52.9562H230.929V45.6056H233.498V45.6059ZM233.446 51.7031C234.215 51.7031 234.815 51.4927 235.236 51.0712C235.658 50.6501 235.868 50.0606 235.868 49.2918C235.868 48.5229 235.658 47.9228 235.236 47.4909C234.815 47.0594 234.215 46.8487 233.446 46.8487H232.404V51.7031H233.446Z" fill="#2B2A29"/><path d="M240.331 9C241.001 9 241.654 9.1719 242.293 9.51634C242.93 9.85948 243.429 10.3525 243.784 10.9915C244.14 11.6325 244.319 12.3003 244.319 12.9934C244.319 13.6813 244.144 14.3436 243.792 14.9775C243.442 15.6132 242.95 16.1059 242.317 16.4562C241.683 16.8081 241.02 16.9835 240.331 16.9835C239.64 16.9835 238.977 16.8084 238.343 16.4562C237.71 16.1059 237.217 15.6132 236.865 14.9775C236.513 14.3439 236.336 13.6813 236.336 12.9934C236.336 12.3003 236.515 11.6325 236.872 10.9915C237.231 10.3525 237.73 9.85948 238.367 9.51634C239.006 9.17158 239.659 9 240.331 9ZM240.331 9.66071C239.769 9.66071 239.223 9.80542 238.692 10.0922C238.161 10.3794 237.746 10.7908 237.446 11.3253C237.147 11.8597 236.996 12.4159 236.996 12.9934C236.996 13.5693 237.144 14.1199 237.439 14.6473C237.733 15.1743 238.145 15.586 238.674 15.8803C239.203 16.1745 239.755 16.3228 240.331 16.3228C240.905 16.3228 241.457 16.1749 241.986 15.8803C242.515 15.586 242.927 15.1746 243.219 14.6473C243.511 14.1202 243.658 13.5693 243.658 12.9934C243.658 12.4159 243.508 11.8597 243.21 11.3253C242.912 10.7911 242.497 10.3794 241.964 10.0922C241.432 9.80509 240.887 9.66071 240.331 9.66071H240.331ZM238.578 15.1956V10.9064H240.055C240.56 10.9064 240.925 10.9459 241.151 11.0252C241.378 11.1045 241.557 11.2417 241.692 11.4405C241.826 11.6373 241.893 11.8468 241.893 12.0688C241.893 12.3812 241.781 12.6557 241.555 12.8869C241.331 13.1196 241.033 13.2494 240.661 13.2783C240.813 13.3417 240.936 13.4175 241.026 13.5058C241.199 13.6738 241.411 13.9571 241.661 14.3562L242.185 15.1956H241.344L240.961 14.5204C240.661 13.9882 240.417 13.6538 240.234 13.5204C240.107 13.4226 239.923 13.3741 239.679 13.3757H239.271V15.1953H238.578V15.1956ZM239.271 12.78H240.112C240.515 12.78 240.79 12.7208 240.936 12.6014C241.082 12.4822 241.156 12.3233 241.156 12.1284C241.156 12.0018 241.12 11.8882 241.05 11.7888C240.979 11.6878 240.882 11.6137 240.757 11.5651C240.631 11.5163 240.4 11.491 240.06 11.491H239.271V12.7797L239.271 12.78Z" fill="#2B2A29"/></svg></div>
-    <div class="bar"></div>
-    <div class="tag">Sales CRM — Phase 1</div>
-    <label>Email</label>
-    <input id="lemail" type="email" autocomplete="username" placeholder="you@terranova.crm">
-    <label>Password</label>
-    <input id="lpass" type="password" autocomplete="current-password" placeholder="••••••••">
-    <div style="margin-top:18px"><button class="btn btn-primary" style="width:100%;justify-content:center" id="lbtn">Sign in</button></div>
+    <div class="lgo"><svg width="245" height="63" viewBox="0 0 245 63" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M54.3416 9.10739C51.5086 6.35142 48.1149 4.14472 44.4056 2.71319C40.7021 1.27438 36.7064 0.593583 32.7554 0.70926C28.8029 0.821297 24.909 1.74749 21.3668 3.33057C17.8205 4.93367 14.6779 7.21939 12.0683 10.0086C6.89227 15.5213 4.16481 22.9655 4.44528 30.2159C4.56234 33.8427 5.37678 37.4219 6.83283 40.7178C8.29045 44.0119 10.3784 47.0249 12.9802 49.5545C15.5662 52.0983 18.6449 54.1459 22.0142 55.5715C25.3833 57.0004 29.0454 57.7985 32.7557 57.9126C40.1781 58.1858 47.7799 55.5309 53.4415 50.4435C56.2703 47.9119 58.627 44.8221 60.2577 41.356C61.8753 37.8911 62.8238 34.0824 62.9346 30.2159C63.0525 26.3521 62.3546 22.4445 60.8823 18.8232C59.4181 15.1964 57.1597 11.8776 54.3421 9.10739H54.3416ZM54.3416 9.10739C57.178 11.8621 59.4618 15.1566 61.048 18.7559C62.6363 22.3561 63.5155 26.2634 63.6317 30.2159C63.914 38.1212 60.9166 46.217 55.2427 52.2059C52.4241 55.2 48.9757 57.6906 45.1227 59.414C41.2686 61.1229 37.0411 62.1102 32.7554 62.2238C28.4729 62.3395 24.1435 61.5947 20.1271 60.0306C18.1229 59.2435 16.1892 58.2682 14.3825 57.1013C12.5792 55.9299 10.8951 54.5837 9.35944 53.0952C6.30671 50.1001 3.85265 46.4998 2.26016 42.5673C0.656676 38.6416 -0.106435 34.4055 0.0119338 30.2159C0.12009 26.0235 1.13723 21.8872 2.88474 18.1174C4.64928 14.3414 7.18584 10.9863 10.2708 8.20563C16.3762 2.67966 24.677 -0.265546 32.7554 0.0188368C36.7981 0.132954 40.7938 0.995462 44.4756 2.54865C48.156 4.10002 51.5251 6.33426 54.3416 9.10713V9.10739Z" fill="#8CC63F"/><path fill-rule="evenodd" clip-rule="evenodd" d="M28.3627 30.4128H16.5598C16.7207 27.1473 18.5061 24.0718 22.7911 23.8818C25.7328 23.8818 28.6742 23.8818 31.6157 23.8818C34.5572 23.8818 37.4986 23.8818 40.4404 23.8818C44.7253 24.0718 46.5104 27.1471 46.6717 30.4128H35.2345V50.8981C12.9039 52.1136 3.24698 26.5218 19.2335 12.75C8.17629 25.9173 12.4918 42.4959 28.3627 46.8712V30.4128Z" fill="#78B833"/><path fill-rule="evenodd" clip-rule="evenodd" d="M32.5275 9.91406C41.8839 9.91406 49.4716 17.5081 49.5014 26.8874C47.8658 19.1514 40.8847 13.3373 32.5195 13.3373C24.1817 13.3373 17.219 19.114 15.5547 26.8131C15.6238 17.4682 23.1958 9.91406 32.5278 9.91406H32.5275Z" fill="#D9DADA"/><path fill-rule="evenodd" clip-rule="evenodd" d="M50.8011 18.3984C57.8292 31.3817 51.8045 45.0459 38.1973 49.5162C38.1973 48.0293 38.1973 47.2617 38.1973 45.7748C50.8362 40.9791 55.4858 30.0614 50.8011 18.3984Z" fill="#B2B3B3"/><path fill-rule="evenodd" clip-rule="evenodd" d="M141.694 21.2698C142.926 18.8225 146.739 18.1447 149.256 18.1447C153.841 18.1447 158.517 19.6736 158.517 25.0097V38.9778L157.437 38.3987C156.631 37.9662 155.739 37.8694 154.838 37.8694C152.936 37.8694 151.049 38.4858 149.084 38.4858C144.925 38.4858 140.815 36.9568 140.815 32.1348C140.815 30.6903 141.243 29.389 142.249 28.334C142.517 28.0536 142.812 27.8044 143.127 27.5817L143.019 27.4383C142.295 26.4794 141.711 25.4659 141.447 24.3361C141.028 25.3998 140.311 26.382 139.474 27.0547L138.281 28.0138V26.4823C138.281 24.0221 135.984 23.6385 134.029 23.9382V38.3142H133.295C131.208 38.3142 126.807 37.7564 126.807 34.9427V17.6173L127.854 18.1117C128.686 18.5043 129.621 18.8633 130.555 18.8633C131.334 18.8633 132.17 18.6697 132.933 18.5176C133.969 18.311 134.974 18.1437 136.035 18.1437C138.414 18.1437 141.057 18.9219 141.694 21.2689V21.2698ZM172.477 34.9433C172.477 37.5123 178.231 37.581 178.231 37.581V24.9411C178.231 20.1799 174.19 18.8782 170.354 18.8782C168.538 18.8782 166.929 19.5978 165.25 19.5978C162.99 19.5978 161.483 18.7756 161.483 18.7756V34.9433C161.483 37.581 167.237 37.581 167.237 37.581V23.2973C167.237 23.2973 168.675 22.9891 169.874 22.9891C171.826 22.9891 172.477 23.8453 172.477 25.4555V34.9436L172.477 34.9433ZM90.8929 16.6177C94.3181 16.6177 94.7632 14.2542 94.7632 11.8908C94.7632 11.8908 93.1537 12.4388 90.3448 12.4388H78.837C76.0281 12.4388 74.3839 11.8908 74.3839 11.8908C74.3839 14.2542 74.8977 16.6177 78.2883 16.6177H81.5766V35.0459C81.5766 37.6839 87.4676 37.6839 87.4676 37.6839V16.6177H90.8925H90.8929ZM98.7019 25.832C98.7019 23.9479 99.25 22.9205 100.962 22.9205C102.469 22.9205 103.052 23.7424 103.052 24.9757C103.052 26.4486 101.887 26.8595 100.654 26.8595C99.9349 26.8595 99.2156 26.7225 98.7019 26.5856V25.832ZM101.956 37.7522C106.305 37.7522 109.08 35.7999 109.08 33.2995C109.08 32.3403 108.669 31.3128 107.847 30.1821C107.813 31.9635 105.689 33.5734 102.127 33.5734C100.038 33.5734 98.7022 32.7171 98.7022 30.7988V30.2507C98.7022 30.2507 99.764 30.7988 101.51 30.7988C107.23 30.7988 108.771 27.9902 108.771 24.9757C108.771 21.3106 106.511 18.8782 101.202 18.8782C95.8933 18.8782 92.9478 21.3106 92.9478 25.3179V31.3128C92.9478 35.3544 96.0986 37.7525 101.956 37.7525V37.7522ZM117.916 37.581V23.3313C120.485 22.7492 123.637 23.263 123.637 26.4826C123.637 26.4826 125.726 24.8045 125.726 22.4064C125.726 19.7005 123.088 18.8782 120.657 18.8782C118.499 18.8782 116.752 19.5978 115.177 19.5978C114.32 19.5978 113.395 19.3576 112.162 18.7756V34.9433C112.162 37.581 117.916 37.581 117.916 37.581H117.916ZM133.295 37.581V23.3313C135.864 22.7492 139.015 23.263 139.015 26.4826C139.015 26.4826 141.104 24.8045 141.104 22.4064C141.104 19.7005 138.467 18.8782 136.035 18.8782C133.877 18.8782 132.131 19.5978 130.555 19.5978C129.698 19.5978 128.774 19.3576 127.541 18.7756V34.9433C127.541 37.581 133.294 37.581 133.294 37.581H133.295ZM152.133 33.5044C152.133 33.5044 150.865 33.8809 149.633 33.8809C148.468 33.8809 147.304 33.5387 147.304 31.9285C147.304 29.7363 151.208 30.2844 152.133 28.8455V33.5041V33.5044ZM149.188 22.9541C151.413 22.9541 152.03 23.9133 152.03 24.7359C150.455 27.0304 141.549 25.8663 141.549 32.1348C141.549 36.4509 145.249 37.7522 149.085 37.7522C151.106 37.7522 153.024 37.1355 154.838 37.1355C155.798 37.1355 156.825 37.2381 157.784 37.7522V25.0097C157.784 21.0364 154.838 18.8782 149.256 18.8782C146.893 18.8782 142.029 19.5635 142.029 23.0234C142.029 24.0852 142.337 25.3179 143.604 26.9967C143.604 23.7427 146.55 22.9544 149.187 22.9544L149.188 22.9541ZM199.467 25.3176C199.467 21.3103 196.624 18.8779 190.596 18.8779C184.499 18.8779 181.656 21.3103 181.656 25.3176V31.3125C181.656 35.3541 184.499 37.7522 190.596 37.7522C196.624 37.7522 199.467 35.3544 199.467 31.3125V25.3176ZM193.713 30.7984C193.713 32.6825 193.165 33.7443 190.596 33.7443C187.959 33.7443 187.411 32.6825 187.411 30.7984V25.8317C187.411 23.9476 187.959 22.9201 190.596 22.9201C193.165 22.9201 193.713 23.9476 193.713 25.8317V30.7984ZM219.47 19.0495C219.47 19.0495 213.887 19.0495 213.51 21.5845L212.825 26.3797C212.14 31.1409 210.461 32.5112 210.461 32.5112C210.461 32.5112 208.852 31.4494 208.133 26.3797L207.447 21.5845C207.071 19.0495 201.522 19.0495 201.522 19.0495L202.31 25.8663C203.234 33.9841 210.393 38.163 210.461 38.1977C210.53 38.1633 217.654 33.9841 218.647 25.8663L219.469 19.0495H219.47ZM231.765 33.5047C231.765 33.5047 230.498 33.8812 229.265 33.8812C228.1 33.8812 226.936 33.539 226.936 31.9289C226.936 29.7366 230.84 30.2847 231.765 28.8458V33.5044V33.5047ZM228.82 22.9544C231.046 22.9544 231.663 23.9136 231.663 24.7362C230.087 27.0307 221.182 25.8666 221.182 32.1351C221.182 36.4512 224.881 37.7525 228.717 37.7525C230.738 37.7525 232.656 37.1359 234.471 37.1359C235.43 37.1359 236.457 37.2385 237.416 37.7525V25.0101C237.416 21.0367 234.471 18.8785 228.888 18.8785C226.525 18.8785 221.661 19.5638 221.661 23.0237C221.661 24.0855 221.969 25.3182 223.236 26.997C223.236 23.743 226.182 22.9548 228.819 22.9548L228.82 22.9544ZM151.261 24.494C151.033 23.7735 149.78 23.6883 149.187 23.6883C146.964 23.6883 144.411 24.2225 144.339 26.8811C144.935 26.5985 145.56 26.3739 146.177 26.1829C147.141 25.8841 150.356 25.2431 151.261 24.494ZM167.971 23.9026V38.3148H167.237C165.15 38.3148 160.749 37.7571 160.749 34.9433V17.5315L161.834 18.1317C162.757 18.6293 164.227 18.8643 165.25 18.8643C166.937 18.8643 168.572 18.145 170.354 18.145C174.765 18.145 178.965 19.8374 178.965 24.9414V38.3226L178.224 38.3148C176.166 38.2931 171.744 37.7075 171.744 34.9433V25.4552C171.744 24.0858 171.233 23.7226 169.874 23.7226C169.272 23.7226 168.599 23.7945 167.971 23.9023V23.9026ZM88.2015 17.3516V38.4174H87.4679C85.3745 38.4174 80.8431 37.8785 80.8431 35.0459V17.3516H78.2886C74.7216 17.3516 73.6504 15.0525 73.6504 11.8908V10.8672L74.6167 11.1948C75.8018 11.5871 77.6114 11.705 78.837 11.705H90.3448C91.5465 11.705 93.3667 11.5894 94.5276 11.1961L95.4968 10.8675V11.8911C95.4968 15.0622 94.4968 17.3519 90.8929 17.3519H88.2015V17.3516ZM108.078 29.253L108.44 29.7509C109.19 30.7819 109.814 31.9955 109.814 33.2998C109.814 33.6546 109.767 34.0078 109.674 34.3503C108.816 37.5175 104.801 38.4861 101.956 38.4861C97.2853 38.4861 92.2143 36.8419 92.2143 31.3128V25.3179C92.2143 20.1116 96.5469 18.1447 101.203 18.1447C105.765 18.1447 109.506 19.9873 109.506 24.9757C109.506 26.8342 108.98 28.2343 108.078 29.253H108.078ZM99.4792 31.2953C99.7122 32.529 100.849 32.8395 102.127 32.8395C103.667 32.8395 107.073 32.2548 107.113 30.1678L107.114 30.1079C105.678 31.1115 103.705 31.5323 101.51 31.5323C100.912 31.5323 100.166 31.4601 99.4792 31.2953ZM118.65 23.9386V38.3145H117.916C115.829 38.3145 111.429 37.7567 111.429 34.943V17.6177L112.475 18.112C113.308 18.5046 114.243 18.8636 115.177 18.8636C115.956 18.8636 116.792 18.6701 117.555 18.5179C118.591 18.3114 119.596 18.144 120.656 18.144C123.385 18.144 126.459 19.1676 126.459 22.4058C126.459 24.127 125.428 25.9828 124.096 27.054L122.902 28.0132V26.4817C122.902 24.0214 120.605 23.6378 118.65 23.9376V23.9386ZM200.2 25.3179V31.3128C200.2 36.8824 195.415 38.4861 190.596 38.4861C185.767 38.4861 180.923 36.9138 180.923 31.3128V25.3179C180.923 19.738 185.785 18.1447 190.596 18.1447C195.397 18.1447 200.2 19.7694 200.2 25.3179ZM210.44 31.4332C211.358 30.1021 211.923 27.4988 212.098 26.2764L212.783 21.4809C213.157 18.8627 217.366 18.3162 219.469 18.3162H220.297L219.375 25.9543C218.933 29.6195 217.243 32.878 214.75 35.5636C213.853 36.5302 211.998 38.2475 210.79 38.8535L210.461 39.0189L210.132 38.8535C208.924 38.2468 207.07 36.5292 206.173 35.5616C203.684 32.8751 202.004 29.6159 201.581 25.9508L200.699 18.3162H201.522C203.623 18.3162 207.8 18.8672 208.173 21.4809L208.858 26.2764C209.011 27.3479 209.567 30.1597 210.441 31.4332H210.44ZM222.759 27.582L222.651 27.4386C221.658 26.123 220.927 24.7045 220.927 23.0234C220.927 19.1314 225.851 18.1447 228.888 18.1447C233.474 18.1447 238.15 19.6736 238.15 25.0097V38.9778L237.07 38.3987C236.263 37.9662 235.371 37.8694 234.471 37.8694C232.568 37.8694 230.681 38.4858 228.717 38.4858C224.558 38.4858 220.448 36.9568 220.448 32.1348C220.448 30.6903 220.875 29.389 221.882 28.334C222.149 28.0536 222.444 27.8044 222.759 27.5817L222.759 27.582ZM230.893 24.494C230.665 23.7735 229.412 23.6883 228.819 23.6883C226.596 23.6883 224.043 24.2225 223.971 26.8811C224.567 26.5985 225.192 26.3739 225.809 26.1829C226.773 25.8841 229.988 25.2431 230.893 24.494ZM99.4354 26.0016C99.8388 26.0796 100.254 26.1259 100.654 26.1259C101.496 26.1259 102.318 25.9725 102.318 24.9757C102.318 24.0159 101.928 23.654 100.962 23.654C99.5565 23.654 99.4354 24.6074 99.4354 25.832V26.0016ZM151.399 32.936V30.2394C149.94 30.8389 148.037 30.9289 148.037 31.9289C148.037 32.9787 148.711 33.1477 149.632 33.1477C150.18 33.1477 150.818 33.0654 151.399 32.936ZM192.979 30.7988V25.832C192.979 24.0331 192.408 23.654 190.596 23.654C188.761 23.654 188.145 23.9988 188.145 25.832V30.7988C188.145 32.632 188.753 33.0107 190.596 33.0107C192.416 33.0107 192.979 32.597 192.979 30.7988ZM231.031 32.936V30.2394C229.572 30.8389 227.669 30.9289 227.669 31.9289C227.669 32.9787 228.343 33.1477 229.265 33.1477C229.813 33.1477 230.451 33.0654 231.031 32.936Z" fill="#D9DADA"/><path d="M90.8843 17.4808C94.3092 17.4808 94.7543 15.1174 94.7543 12.7539C94.7543 12.7539 93.1448 13.3023 90.3362 13.3023H78.829C76.0208 13.3023 74.377 12.7539 74.377 12.7539C74.377 15.117 74.891 17.4808 78.2813 17.4808H81.569V35.9074C81.569 38.5448 87.4593 38.5448 87.4593 38.5448V17.4808H90.8843ZM98.6923 26.6941C98.6923 24.8104 99.2404 23.7829 100.953 23.7829C102.46 23.7829 103.042 24.6049 103.042 25.8379C103.042 27.3108 101.878 27.7219 100.645 27.7219C99.9254 27.7219 99.2064 27.585 98.6927 27.4481L98.6923 26.6941ZM101.946 38.6134C106.295 38.6134 109.069 36.6614 109.069 34.161C109.069 33.2018 108.658 32.1743 107.836 31.0442C107.802 32.8253 105.679 34.4349 102.117 34.4349C100.028 34.4349 98.6923 33.5786 98.6923 31.6606V31.1125C98.6923 31.1125 99.7544 31.6606 101.501 31.6606C107.22 31.6606 108.761 28.852 108.761 25.8379C108.761 22.1731 106.5 19.7413 101.192 19.7413C95.8838 19.7413 92.9386 22.1731 92.9386 26.1804V32.1743C92.9386 36.2159 96.0893 38.6134 101.946 38.6134ZM117.905 38.4421V24.1941C120.474 23.612 123.625 24.1258 123.625 27.3451C123.625 27.3451 125.714 25.667 125.714 23.2695C125.714 20.5636 123.077 19.7417 120.645 19.7417C118.488 19.7417 116.741 20.4609 115.166 20.4609C114.309 20.4609 113.385 20.2211 112.152 19.639V35.8055C112.152 38.4425 117.905 38.4421 117.905 38.4421ZM133.282 38.4421V24.1941C135.851 23.612 139.002 24.1258 139.002 27.3451C139.002 27.3451 141.091 25.667 141.091 23.2695C141.091 20.5636 138.454 19.7417 136.022 19.7417C133.865 19.7417 132.118 20.4609 130.543 20.4609C129.686 20.4609 128.762 20.2211 127.528 19.639V35.8055C127.528 38.4425 133.282 38.4421 133.282 38.4421ZM152.118 34.3665C152.118 34.3665 150.852 34.7434 149.618 34.7434C148.454 34.7434 147.289 34.4009 147.289 32.791C147.289 30.5991 151.194 31.1469 152.118 29.7086V34.3665ZM149.173 23.8173C151.399 23.8173 152.016 24.7764 152.016 25.5983C150.44 27.8932 141.536 26.7288 141.536 32.9966C141.536 37.312 145.235 38.6134 149.07 38.6134C151.091 38.6134 153.009 37.997 154.824 37.997C155.783 37.997 156.81 38.0996 157.769 38.6134V25.8722C157.769 21.8992 154.824 19.7413 149.241 19.7413C146.879 19.7413 142.015 20.4266 142.015 23.8856C142.015 24.9473 142.324 26.1804 143.591 27.8585C143.591 24.6049 146.536 23.8173 149.173 23.8173Z" fill="#78B833"/><path fill-rule="evenodd" clip-rule="evenodd" d="M144.262 37.6568L147.772 34.1847C148.219 34.6262 148.915 34.7489 149.611 34.7489C150.844 34.7489 152.111 34.3721 152.111 34.3721V29.8928L157.618 24.4453C157.713 24.893 157.761 25.3708 157.761 25.8781V38.6193C156.803 38.1055 155.775 38.0029 154.816 38.0029C153.001 38.0029 151.083 38.6193 149.062 38.6193C147.323 38.6193 145.613 38.3519 144.262 37.6572L144.262 37.6568Z" fill="#2B2A29"/><path d="M172.456 35.8071C172.456 38.3758 178.209 38.4441 178.209 38.4441V25.8058C178.209 21.0449 174.168 19.7432 170.333 19.7432C168.518 19.7432 166.908 20.4625 165.23 20.4625C162.969 20.4625 161.463 19.6406 161.463 19.6406V35.8071C161.463 38.4441 167.217 38.4441 167.217 38.4441V24.1616C167.217 24.1616 168.655 23.8535 169.854 23.8535C171.806 23.8535 172.456 24.7097 172.456 26.3196V35.8071H172.456ZM199.443 26.1826C199.443 22.1753 196.601 19.7436 190.573 19.7436C184.477 19.7436 181.634 22.1753 181.634 26.1826V32.1766C181.634 36.2182 184.477 38.6156 190.573 38.6156C196.601 38.6156 199.443 36.2182 199.443 32.1766V26.1826ZM193.69 31.6625C193.69 33.5465 193.142 34.608 190.573 34.608C187.936 34.608 187.388 33.5462 187.388 31.6625V26.6964C187.388 24.8127 187.936 23.7852 190.573 23.7852C193.142 23.7852 193.69 24.8127 193.69 26.6964V31.6625ZM219.444 19.9145C219.444 19.9145 213.861 19.9145 213.485 22.4492L212.8 27.2444C212.115 32.0053 210.436 33.3753 210.436 33.3753C210.436 33.3753 208.827 32.3135 208.108 27.2444L207.423 22.4492C207.047 19.9145 201.498 19.9145 201.498 19.9145L202.286 26.7307C203.21 34.8479 210.368 39.0264 210.436 39.0607C210.505 39.0264 217.629 34.8479 218.622 26.7307L219.444 19.9145ZM231.738 34.3685C231.738 34.3685 230.471 34.7453 229.238 34.7453C228.074 34.7453 226.909 34.4028 226.909 32.7929C226.909 30.601 230.814 31.1488 231.738 29.7105V34.3685H231.738ZM228.793 23.8192C231.019 23.8192 231.636 24.7783 231.636 25.6002C230.06 27.8951 221.156 26.7307 221.156 32.9985C221.156 37.314 224.855 38.6153 228.691 38.6153C230.711 38.6153 232.629 37.9989 234.444 37.9989C235.403 37.9989 236.431 38.1016 237.389 38.6153V25.8741C237.389 21.9011 234.444 19.7432 228.862 19.7432C226.499 19.7432 221.635 20.4286 221.635 23.8875C221.635 24.9493 221.944 26.1823 223.211 27.8604C223.211 24.6068 226.156 23.8188 228.793 23.8188V23.8192Z" fill="#2B2A29"/><path fill-rule="evenodd" clip-rule="evenodd" d="M161.463 20.6006L162.169 19.9023C162.273 19.9396 162.386 19.9775 162.51 20.016L162.104 37.0921C161.711 36.7486 161.463 36.3151 161.463 35.768V20.6009V20.6006Z" fill="#2B2A29"/><path fill-rule="evenodd" clip-rule="evenodd" d="M79.6427 47.8172C79.474 47.5116 79.2425 47.2695 78.9476 47.1115C78.6524 46.9539 78.3051 46.8694 77.9156 46.8694C77.4838 46.8694 77.094 46.9642 76.757 47.1643C76.4201 47.3644 76.1569 47.6382 75.9675 48.0069C75.7778 48.3753 75.683 48.7968 75.683 49.2707C75.683 49.7657 75.7778 50.1868 75.9779 50.5556C76.1672 50.9243 76.4304 51.1981 76.7781 51.3982C77.1258 51.5983 77.5259 51.6931 77.9784 51.6931C78.5365 51.6931 79.0001 51.5455 79.3581 51.2402C79.7161 50.9453 79.9479 50.5345 80.0635 49.9975H77.5362V48.8709H81.5167V50.1558C81.4218 50.6718 81.2114 51.1454 80.8851 51.5775C80.5585 52.0091 80.1477 52.3567 79.6423 52.6199C79.1263 52.8831 78.5576 53.0203 77.9257 53.0203C77.22 53.0203 76.5777 52.8624 76.0089 52.5361C75.4298 52.2198 74.9873 51.7776 74.661 51.2091C74.3347 50.6404 74.166 49.9978 74.166 49.2714C74.166 48.5446 74.3347 47.9021 74.661 47.3229C74.9873 46.7545 75.4298 46.3123 76.0089 45.9856C76.5777 45.6697 77.2093 45.5117 77.9153 45.5117C78.7469 45.5117 79.4633 45.7118 80.0742 46.1119C80.685 46.5227 81.1062 47.0911 81.338 47.8179H79.6427V47.8172ZM86.4035 52.9562L84.7817 50.0917H84.0867V52.9562H82.6124V45.6056H85.3715C85.9403 45.6056 86.4245 45.7005 86.8247 45.9005C87.2248 46.1006 87.5304 46.3744 87.7304 46.7111C87.9305 47.0588 88.0253 47.4378 88.0253 47.859C88.0253 48.3433 87.8884 48.7754 87.6038 49.1649C87.3196 49.5546 86.9088 49.8282 86.3507 49.9758L88.1095 52.9559H86.4035V52.9562ZM84.0867 48.9862H85.319C85.7192 48.9862 86.0141 48.8913 86.2141 48.6913C86.4142 48.5019 86.509 48.2384 86.509 47.8907C86.509 47.5537 86.4142 47.2906 86.2141 47.1009C86.0141 46.9218 85.7192 46.827 85.319 46.827H84.0867V48.9859V48.9862ZM90.8371 46.7956V48.6385H93.312V49.8075H90.8371V51.7559H93.6279V52.9562H89.3629V45.5949H93.6279V46.7956H90.8371ZM96.4397 46.7956V48.6385H98.9145V49.8075H96.4397V51.7559H99.2305V52.9562H94.9655V45.5949H99.2305V46.7956H96.4397ZM106.855 52.9562H105.38L102.042 47.9121V52.9562H100.568V45.5949H102.042L105.38 50.6498V45.5949H106.855V52.9562ZM112.289 46.7956V48.6385H114.763V49.8075H112.289V51.7559H115.079V52.9562H110.814V45.5949H115.079V46.7956H112.289ZM122.704 52.9562H121.23L117.891 47.9121V52.9562H116.417V45.5949H117.891L121.23 50.6498V45.5949H122.704V52.9562ZM125.631 46.7956V48.6385H128.106V49.8075H125.631V51.7559H128.422V52.9562H124.157V45.5949H128.422V46.7956H125.631ZM133.55 52.9562L131.929 50.0917H131.233V52.9562H129.759V45.6056H132.518C133.087 45.6056 133.571 45.7005 133.971 45.9005C134.372 46.1006 134.677 46.3744 134.877 46.7111C135.077 47.0588 135.172 47.4378 135.172 47.859C135.172 48.3433 135.035 48.7754 134.751 49.1649C134.466 49.5546 134.056 49.8282 133.498 49.9758L135.256 52.9559H133.55V52.9562ZM131.233 48.9862H132.466C132.866 48.9862 133.161 48.8913 133.361 48.6913C133.561 48.5019 133.656 48.2384 133.656 47.8907C133.656 47.5537 133.561 47.2906 133.361 47.1009C133.161 46.9218 132.866 46.827 132.466 46.827H131.233V48.9859V48.9862ZM141.627 47.8172C141.459 47.5116 141.227 47.2695 140.932 47.1115C140.637 46.9539 140.29 46.8694 139.9 46.8694C139.469 46.8694 139.079 46.9642 138.742 47.1643C138.405 47.3644 138.142 47.6382 137.952 48.0069C137.763 48.3753 137.668 48.7968 137.668 49.2707C137.668 49.7657 137.763 50.1868 137.963 50.5556C138.153 50.9243 138.415 51.1981 138.763 51.3982C139.111 51.5983 139.511 51.6931 139.964 51.6931C140.522 51.6931 140.985 51.5455 141.343 51.2402C141.701 50.9453 141.933 50.5345 142.049 49.9975H139.522V48.8709H143.502V50.1558C143.408 50.6718 143.197 51.1454 142.87 51.5775C142.544 52.0091 142.133 52.3567 141.628 52.6199C141.112 52.8831 140.543 53.0203 139.911 53.0203C139.206 53.0203 138.563 52.8624 137.995 52.5361C137.416 52.2198 136.973 51.7776 136.647 51.2091C136.32 50.6404 136.152 49.9978 136.152 49.2714C136.152 48.5446 136.32 47.9021 136.647 47.3229C136.973 46.7545 137.416 46.3123 137.995 45.9856C138.563 45.6697 139.195 45.5117 139.901 45.5117C140.733 45.5117 141.449 45.7118 142.06 46.1119C142.67 46.5227 143.092 47.0911 143.323 47.8179H141.628L141.627 47.8172ZM150.442 45.6059L147.956 50.3973V52.9566H146.482V50.3973L143.986 45.6059H145.65L147.23 48.9655L148.799 45.6059H150.442ZM159.162 47.8804C159.162 48.2701 159.067 48.6385 158.888 48.9862C158.698 49.3335 158.403 49.6074 158.014 49.8181C157.614 50.0289 157.108 50.1341 156.508 50.1341H155.276V52.9562H153.801V45.6056H156.508C157.076 45.6056 157.561 45.7005 157.961 45.9005C158.361 46.1006 158.667 46.3638 158.866 46.7111C159.066 47.0588 159.161 47.4485 159.161 47.88L159.162 47.8804ZM156.445 48.9438C156.855 48.9438 157.15 48.8489 157.35 48.6596C157.55 48.4805 157.645 48.2173 157.645 47.8804C157.645 47.1643 157.245 46.8063 156.445 46.8063H155.276V48.9441H156.445V48.9438ZM163.995 52.9562L162.373 50.0917H161.678V52.9562H160.204V45.6056H162.963C163.532 45.6056 164.016 45.7005 164.416 45.9005C164.817 46.1006 165.122 46.3744 165.322 46.7111C165.522 47.0588 165.617 47.4378 165.617 47.859C165.617 48.3433 165.48 48.7754 165.196 49.1649C164.911 49.5546 164.501 49.8282 163.943 49.9758L165.701 52.9559H163.995V52.9562ZM161.678 48.9862H162.911C163.311 48.9862 163.606 48.8913 163.806 48.6913C164.006 48.5019 164.101 48.2384 164.101 47.8907C164.101 47.5537 164.006 47.2906 163.806 47.1009C163.606 46.9218 163.311 46.827 162.911 46.827H161.678V48.9859V48.9862ZM168.429 45.6056V52.9562H166.954V45.6056H168.429ZM176.485 45.6056L173.789 52.9562H171.999L169.303 45.6056H170.882L172.904 51.45L174.916 45.6056H176.485ZM181.876 51.5555H178.949L178.465 52.9562H176.917L179.56 45.5949H181.277L183.92 52.9562H182.361L181.877 51.5555H181.876ZM181.476 50.3762L180.413 47.3012L179.349 50.3762H181.476ZM189.912 45.6059V46.7959H187.953V52.9566H186.479V46.7959H184.52V45.6059H189.912H189.912ZM192.46 46.7959V48.6388H194.935V49.8078H192.46V51.7562H195.251V52.9566H190.986V45.5952H195.251V46.7959H192.46ZM200.569 51.7876H202.991V52.9566H199.094V45.6059H200.569V51.7876H200.569ZM205.403 45.6059V52.9566H203.928V45.6059H205.403ZM214.87 45.6059V52.9566H213.396V48.1753L211.426 52.9566H210.31L208.33 48.1753V52.9566H206.856V45.6059H208.53L210.868 51.0712L213.206 45.6059H214.87ZM217.797 45.6059V52.9566H216.323V45.6059H217.797ZM224.253 45.6059V46.7959H222.294V52.9566H220.82V46.7959H218.861V45.6059H224.253ZM226.801 46.7959V48.6388H229.276V49.8078H226.801V51.7562H229.592V52.9566H225.327V45.5952H229.592V46.7959H226.801ZM233.498 45.6059C234.267 45.6059 234.952 45.7532 235.541 46.0585C236.121 46.3637 236.573 46.7852 236.9 47.3433C237.216 47.9014 237.374 48.5543 237.374 49.2914C237.374 50.0289 237.216 50.6708 236.9 51.2185C236.573 51.7766 236.121 52.1978 235.541 52.5034C234.952 52.8086 234.267 52.9562 233.498 52.9562H230.929V45.6056H233.498V45.6059ZM233.446 51.7031C234.215 51.7031 234.815 51.4927 235.236 51.0712C235.658 50.6501 235.868 50.0606 235.868 49.2918C235.868 48.5229 235.658 47.9228 235.236 47.4909C234.815 47.0594 234.215 46.8487 233.446 46.8487H232.404V51.7031H233.446Z" fill="#2B2A29"/><path d="M240.331 9C241.001 9 241.654 9.1719 242.293 9.51634C242.93 9.85948 243.429 10.3525 243.784 10.9915C244.14 11.6325 244.319 12.3003 244.319 12.9934C244.319 13.6813 244.144 14.3436 243.792 14.9775C243.442 15.6132 242.95 16.1059 242.317 16.4562C241.683 16.8081 241.02 16.9835 240.331 16.9835C239.64 16.9835 238.977 16.8084 238.343 16.4562C237.71 16.1059 237.217 15.6132 236.865 14.9775C236.513 14.3439 236.336 13.6813 236.336 12.9934C236.336 12.3003 236.515 11.6325 236.872 10.9915C237.231 10.3525 237.73 9.85948 238.367 9.51634C239.006 9.17158 239.659 9 240.331 9ZM240.331 9.66071C239.769 9.66071 239.223 9.80542 238.692 10.0922C238.161 10.3794 237.746 10.7908 237.446 11.3253C237.147 11.8597 236.996 12.4159 236.996 12.9934C236.996 13.5693 237.144 14.1199 237.439 14.6473C237.733 15.1743 238.145 15.586 238.674 15.8803C239.203 16.1745 239.755 16.3228 240.331 16.3228C240.905 16.3228 241.457 16.1749 241.986 15.8803C242.515 15.586 242.927 15.1746 243.219 14.6473C243.511 14.1202 243.658 13.5693 243.658 12.9934C243.658 12.4159 243.508 11.8597 243.21 11.3253C242.912 10.7911 242.497 10.3794 241.964 10.0922C241.432 9.80509 240.887 9.66071 240.331 9.66071H240.331ZM238.578 15.1956V10.9064H240.055C240.56 10.9064 240.925 10.9459 241.151 11.0252C241.378 11.1045 241.557 11.2417 241.692 11.4405C241.826 11.6373 241.893 11.8468 241.893 12.0688C241.893 12.3812 241.781 12.6557 241.555 12.8869C241.331 13.1196 241.033 13.2494 240.661 13.2783C240.813 13.3417 240.936 13.4175 241.026 13.5058C241.199 13.6738 241.411 13.9571 241.661 14.3562L242.185 15.1956H241.344L240.961 14.5204C240.661 13.9882 240.417 13.6538 240.234 13.5204C240.107 13.4226 239.923 13.3741 239.679 13.3757H239.271V15.1953H238.578V15.1956ZM239.271 12.78H240.112C240.515 12.78 240.79 12.7208 240.936 12.6014C241.082 12.4822 241.156 12.3233 241.156 12.1284C241.156 12.0018 241.12 11.8882 241.05 11.7888C240.979 11.6878 240.882 11.6137 240.757 11.5651C240.631 11.5163 240.4 11.491 240.06 11.491H239.271V12.7797L239.271 12.78Z" fill="#2B2A29"/></svg></div>
+    <div class="eyebrow">Sales CRM — Phase 1</div>
+    <div class="hairline"></div>
+    <label>Email
+      <input id="lemail" type="email" autocomplete="username" placeholder="you@terranova.crm">
+    </label>
+    <label>Password
+      <input id="lpass" type="password" autocomplete="current-password" placeholder="••••••••">
+    </label>
+    <button class="btn btn-primary" id="lbtn">Sign in</button>
     <div id="loginerr"></div>
   </div>
+  <div class="foot">Terranova Green Energy Private Limited</div>
 </div>
 
 <div id="app">
   <header>
     <div class="hwrap">
       <span class="logo"><svg width="245" height="63" viewBox="0 0 245 63" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M54.3416 9.10739C51.5086 6.35142 48.1149 4.14472 44.4056 2.71319C40.7021 1.27438 36.7064 0.593583 32.7554 0.70926C28.8029 0.821297 24.909 1.74749 21.3668 3.33057C17.8205 4.93367 14.6779 7.21939 12.0683 10.0086C6.89227 15.5213 4.16481 22.9655 4.44528 30.2159C4.56234 33.8427 5.37678 37.4219 6.83283 40.7178C8.29045 44.0119 10.3784 47.0249 12.9802 49.5545C15.5662 52.0983 18.6449 54.1459 22.0142 55.5715C25.3833 57.0004 29.0454 57.7985 32.7557 57.9126C40.1781 58.1858 47.7799 55.5309 53.4415 50.4435C56.2703 47.9119 58.627 44.8221 60.2577 41.356C61.8753 37.8911 62.8238 34.0824 62.9346 30.2159C63.0525 26.3521 62.3546 22.4445 60.8823 18.8232C59.4181 15.1964 57.1597 11.8776 54.3421 9.10739H54.3416ZM54.3416 9.10739C57.178 11.8621 59.4618 15.1566 61.048 18.7559C62.6363 22.3561 63.5155 26.2634 63.6317 30.2159C63.914 38.1212 60.9166 46.217 55.2427 52.2059C52.4241 55.2 48.9757 57.6906 45.1227 59.414C41.2686 61.1229 37.0411 62.1102 32.7554 62.2238C28.4729 62.3395 24.1435 61.5947 20.1271 60.0306C18.1229 59.2435 16.1892 58.2682 14.3825 57.1013C12.5792 55.9299 10.8951 54.5837 9.35944 53.0952C6.30671 50.1001 3.85265 46.4998 2.26016 42.5673C0.656676 38.6416 -0.106435 34.4055 0.0119338 30.2159C0.12009 26.0235 1.13723 21.8872 2.88474 18.1174C4.64928 14.3414 7.18584 10.9863 10.2708 8.20563C16.3762 2.67966 24.677 -0.265546 32.7554 0.0188368C36.7981 0.132954 40.7938 0.995462 44.4756 2.54865C48.156 4.10002 51.5251 6.33426 54.3416 9.10713V9.10739Z" fill="#8CC63F"/><path fill-rule="evenodd" clip-rule="evenodd" d="M28.3627 30.4128H16.5598C16.7207 27.1473 18.5061 24.0718 22.7911 23.8818C25.7328 23.8818 28.6742 23.8818 31.6157 23.8818C34.5572 23.8818 37.4986 23.8818 40.4404 23.8818C44.7253 24.0718 46.5104 27.1471 46.6717 30.4128H35.2345V50.8981C12.9039 52.1136 3.24698 26.5218 19.2335 12.75C8.17629 25.9173 12.4918 42.4959 28.3627 46.8712V30.4128Z" fill="#78B833"/><path fill-rule="evenodd" clip-rule="evenodd" d="M32.5275 9.91406C41.8839 9.91406 49.4716 17.5081 49.5014 26.8874C47.8658 19.1514 40.8847 13.3373 32.5195 13.3373C24.1817 13.3373 17.219 19.114 15.5547 26.8131C15.6238 17.4682 23.1958 9.91406 32.5278 9.91406H32.5275Z" fill="#D9DADA"/><path fill-rule="evenodd" clip-rule="evenodd" d="M50.8011 18.3984C57.8292 31.3817 51.8045 45.0459 38.1973 49.5162C38.1973 48.0293 38.1973 47.2617 38.1973 45.7748C50.8362 40.9791 55.4858 30.0614 50.8011 18.3984Z" fill="#B2B3B3"/><path fill-rule="evenodd" clip-rule="evenodd" d="M141.694 21.2698C142.926 18.8225 146.739 18.1447 149.256 18.1447C153.841 18.1447 158.517 19.6736 158.517 25.0097V38.9778L157.437 38.3987C156.631 37.9662 155.739 37.8694 154.838 37.8694C152.936 37.8694 151.049 38.4858 149.084 38.4858C144.925 38.4858 140.815 36.9568 140.815 32.1348C140.815 30.6903 141.243 29.389 142.249 28.334C142.517 28.0536 142.812 27.8044 143.127 27.5817L143.019 27.4383C142.295 26.4794 141.711 25.4659 141.447 24.3361C141.028 25.3998 140.311 26.382 139.474 27.0547L138.281 28.0138V26.4823C138.281 24.0221 135.984 23.6385 134.029 23.9382V38.3142H133.295C131.208 38.3142 126.807 37.7564 126.807 34.9427V17.6173L127.854 18.1117C128.686 18.5043 129.621 18.8633 130.555 18.8633C131.334 18.8633 132.17 18.6697 132.933 18.5176C133.969 18.311 134.974 18.1437 136.035 18.1437C138.414 18.1437 141.057 18.9219 141.694 21.2689V21.2698ZM172.477 34.9433C172.477 37.5123 178.231 37.581 178.231 37.581V24.9411C178.231 20.1799 174.19 18.8782 170.354 18.8782C168.538 18.8782 166.929 19.5978 165.25 19.5978C162.99 19.5978 161.483 18.7756 161.483 18.7756V34.9433C161.483 37.581 167.237 37.581 167.237 37.581V23.2973C167.237 23.2973 168.675 22.9891 169.874 22.9891C171.826 22.9891 172.477 23.8453 172.477 25.4555V34.9436L172.477 34.9433ZM90.8929 16.6177C94.3181 16.6177 94.7632 14.2542 94.7632 11.8908C94.7632 11.8908 93.1537 12.4388 90.3448 12.4388H78.837C76.0281 12.4388 74.3839 11.8908 74.3839 11.8908C74.3839 14.2542 74.8977 16.6177 78.2883 16.6177H81.5766V35.0459C81.5766 37.6839 87.4676 37.6839 87.4676 37.6839V16.6177H90.8925H90.8929ZM98.7019 25.832C98.7019 23.9479 99.25 22.9205 100.962 22.9205C102.469 22.9205 103.052 23.7424 103.052 24.9757C103.052 26.4486 101.887 26.8595 100.654 26.8595C99.9349 26.8595 99.2156 26.7225 98.7019 26.5856V25.832ZM101.956 37.7522C106.305 37.7522 109.08 35.7999 109.08 33.2995C109.08 32.3403 108.669 31.3128 107.847 30.1821C107.813 31.9635 105.689 33.5734 102.127 33.5734C100.038 33.5734 98.7022 32.7171 98.7022 30.7988V30.2507C98.7022 30.2507 99.764 30.7988 101.51 30.7988C107.23 30.7988 108.771 27.9902 108.771 24.9757C108.771 21.3106 106.511 18.8782 101.202 18.8782C95.8933 18.8782 92.9478 21.3106 92.9478 25.3179V31.3128C92.9478 35.3544 96.0986 37.7525 101.956 37.7525V37.7522ZM117.916 37.581V23.3313C120.485 22.7492 123.637 23.263 123.637 26.4826C123.637 26.4826 125.726 24.8045 125.726 22.4064C125.726 19.7005 123.088 18.8782 120.657 18.8782C118.499 18.8782 116.752 19.5978 115.177 19.5978C114.32 19.5978 113.395 19.3576 112.162 18.7756V34.9433C112.162 37.581 117.916 37.581 117.916 37.581H117.916ZM133.295 37.581V23.3313C135.864 22.7492 139.015 23.263 139.015 26.4826C139.015 26.4826 141.104 24.8045 141.104 22.4064C141.104 19.7005 138.467 18.8782 136.035 18.8782C133.877 18.8782 132.131 19.5978 130.555 19.5978C129.698 19.5978 128.774 19.3576 127.541 18.7756V34.9433C127.541 37.581 133.294 37.581 133.294 37.581H133.295ZM152.133 33.5044C152.133 33.5044 150.865 33.8809 149.633 33.8809C148.468 33.8809 147.304 33.5387 147.304 31.9285C147.304 29.7363 151.208 30.2844 152.133 28.8455V33.5041V33.5044ZM149.188 22.9541C151.413 22.9541 152.03 23.9133 152.03 24.7359C150.455 27.0304 141.549 25.8663 141.549 32.1348C141.549 36.4509 145.249 37.7522 149.085 37.7522C151.106 37.7522 153.024 37.1355 154.838 37.1355C155.798 37.1355 156.825 37.2381 157.784 37.7522V25.0097C157.784 21.0364 154.838 18.8782 149.256 18.8782C146.893 18.8782 142.029 19.5635 142.029 23.0234C142.029 24.0852 142.337 25.3179 143.604 26.9967C143.604 23.7427 146.55 22.9544 149.187 22.9544L149.188 22.9541ZM199.467 25.3176C199.467 21.3103 196.624 18.8779 190.596 18.8779C184.499 18.8779 181.656 21.3103 181.656 25.3176V31.3125C181.656 35.3541 184.499 37.7522 190.596 37.7522C196.624 37.7522 199.467 35.3544 199.467 31.3125V25.3176ZM193.713 30.7984C193.713 32.6825 193.165 33.7443 190.596 33.7443C187.959 33.7443 187.411 32.6825 187.411 30.7984V25.8317C187.411 23.9476 187.959 22.9201 190.596 22.9201C193.165 22.9201 193.713 23.9476 193.713 25.8317V30.7984ZM219.47 19.0495C219.47 19.0495 213.887 19.0495 213.51 21.5845L212.825 26.3797C212.14 31.1409 210.461 32.5112 210.461 32.5112C210.461 32.5112 208.852 31.4494 208.133 26.3797L207.447 21.5845C207.071 19.0495 201.522 19.0495 201.522 19.0495L202.31 25.8663C203.234 33.9841 210.393 38.163 210.461 38.1977C210.53 38.1633 217.654 33.9841 218.647 25.8663L219.469 19.0495H219.47ZM231.765 33.5047C231.765 33.5047 230.498 33.8812 229.265 33.8812C228.1 33.8812 226.936 33.539 226.936 31.9289C226.936 29.7366 230.84 30.2847 231.765 28.8458V33.5044V33.5047ZM228.82 22.9544C231.046 22.9544 231.663 23.9136 231.663 24.7362C230.087 27.0307 221.182 25.8666 221.182 32.1351C221.182 36.4512 224.881 37.7525 228.717 37.7525C230.738 37.7525 232.656 37.1359 234.471 37.1359C235.43 37.1359 236.457 37.2385 237.416 37.7525V25.0101C237.416 21.0367 234.471 18.8785 228.888 18.8785C226.525 18.8785 221.661 19.5638 221.661 23.0237C221.661 24.0855 221.969 25.3182 223.236 26.997C223.236 23.743 226.182 22.9548 228.819 22.9548L228.82 22.9544ZM151.261 24.494C151.033 23.7735 149.78 23.6883 149.187 23.6883C146.964 23.6883 144.411 24.2225 144.339 26.8811C144.935 26.5985 145.56 26.3739 146.177 26.1829C147.141 25.8841 150.356 25.2431 151.261 24.494ZM167.971 23.9026V38.3148H167.237C165.15 38.3148 160.749 37.7571 160.749 34.9433V17.5315L161.834 18.1317C162.757 18.6293 164.227 18.8643 165.25 18.8643C166.937 18.8643 168.572 18.145 170.354 18.145C174.765 18.145 178.965 19.8374 178.965 24.9414V38.3226L178.224 38.3148C176.166 38.2931 171.744 37.7075 171.744 34.9433V25.4552C171.744 24.0858 171.233 23.7226 169.874 23.7226C169.272 23.7226 168.599 23.7945 167.971 23.9023V23.9026ZM88.2015 17.3516V38.4174H87.4679C85.3745 38.4174 80.8431 37.8785 80.8431 35.0459V17.3516H78.2886C74.7216 17.3516 73.6504 15.0525 73.6504 11.8908V10.8672L74.6167 11.1948C75.8018 11.5871 77.6114 11.705 78.837 11.705H90.3448C91.5465 11.705 93.3667 11.5894 94.5276 11.1961L95.4968 10.8675V11.8911C95.4968 15.0622 94.4968 17.3519 90.8929 17.3519H88.2015V17.3516ZM108.078 29.253L108.44 29.7509C109.19 30.7819 109.814 31.9955 109.814 33.2998C109.814 33.6546 109.767 34.0078 109.674 34.3503C108.816 37.5175 104.801 38.4861 101.956 38.4861C97.2853 38.4861 92.2143 36.8419 92.2143 31.3128V25.3179C92.2143 20.1116 96.5469 18.1447 101.203 18.1447C105.765 18.1447 109.506 19.9873 109.506 24.9757C109.506 26.8342 108.98 28.2343 108.078 29.253H108.078ZM99.4792 31.2953C99.7122 32.529 100.849 32.8395 102.127 32.8395C103.667 32.8395 107.073 32.2548 107.113 30.1678L107.114 30.1079C105.678 31.1115 103.705 31.5323 101.51 31.5323C100.912 31.5323 100.166 31.4601 99.4792 31.2953ZM118.65 23.9386V38.3145H117.916C115.829 38.3145 111.429 37.7567 111.429 34.943V17.6177L112.475 18.112C113.308 18.5046 114.243 18.8636 115.177 18.8636C115.956 18.8636 116.792 18.6701 117.555 18.5179C118.591 18.3114 119.596 18.144 120.656 18.144C123.385 18.144 126.459 19.1676 126.459 22.4058C126.459 24.127 125.428 25.9828 124.096 27.054L122.902 28.0132V26.4817C122.902 24.0214 120.605 23.6378 118.65 23.9376V23.9386ZM200.2 25.3179V31.3128C200.2 36.8824 195.415 38.4861 190.596 38.4861C185.767 38.4861 180.923 36.9138 180.923 31.3128V25.3179C180.923 19.738 185.785 18.1447 190.596 18.1447C195.397 18.1447 200.2 19.7694 200.2 25.3179ZM210.44 31.4332C211.358 30.1021 211.923 27.4988 212.098 26.2764L212.783 21.4809C213.157 18.8627 217.366 18.3162 219.469 18.3162H220.297L219.375 25.9543C218.933 29.6195 217.243 32.878 214.75 35.5636C213.853 36.5302 211.998 38.2475 210.79 38.8535L210.461 39.0189L210.132 38.8535C208.924 38.2468 207.07 36.5292 206.173 35.5616C203.684 32.8751 202.004 29.6159 201.581 25.9508L200.699 18.3162H201.522C203.623 18.3162 207.8 18.8672 208.173 21.4809L208.858 26.2764C209.011 27.3479 209.567 30.1597 210.441 31.4332H210.44ZM222.759 27.582L222.651 27.4386C221.658 26.123 220.927 24.7045 220.927 23.0234C220.927 19.1314 225.851 18.1447 228.888 18.1447C233.474 18.1447 238.15 19.6736 238.15 25.0097V38.9778L237.07 38.3987C236.263 37.9662 235.371 37.8694 234.471 37.8694C232.568 37.8694 230.681 38.4858 228.717 38.4858C224.558 38.4858 220.448 36.9568 220.448 32.1348C220.448 30.6903 220.875 29.389 221.882 28.334C222.149 28.0536 222.444 27.8044 222.759 27.5817L222.759 27.582ZM230.893 24.494C230.665 23.7735 229.412 23.6883 228.819 23.6883C226.596 23.6883 224.043 24.2225 223.971 26.8811C224.567 26.5985 225.192 26.3739 225.809 26.1829C226.773 25.8841 229.988 25.2431 230.893 24.494ZM99.4354 26.0016C99.8388 26.0796 100.254 26.1259 100.654 26.1259C101.496 26.1259 102.318 25.9725 102.318 24.9757C102.318 24.0159 101.928 23.654 100.962 23.654C99.5565 23.654 99.4354 24.6074 99.4354 25.832V26.0016ZM151.399 32.936V30.2394C149.94 30.8389 148.037 30.9289 148.037 31.9289C148.037 32.9787 148.711 33.1477 149.632 33.1477C150.18 33.1477 150.818 33.0654 151.399 32.936ZM192.979 30.7988V25.832C192.979 24.0331 192.408 23.654 190.596 23.654C188.761 23.654 188.145 23.9988 188.145 25.832V30.7988C188.145 32.632 188.753 33.0107 190.596 33.0107C192.416 33.0107 192.979 32.597 192.979 30.7988ZM231.031 32.936V30.2394C229.572 30.8389 227.669 30.9289 227.669 31.9289C227.669 32.9787 228.343 33.1477 229.265 33.1477C229.813 33.1477 230.451 33.0654 231.031 32.936Z" fill="#D9DADA"/><path d="M90.8843 17.4808C94.3092 17.4808 94.7543 15.1174 94.7543 12.7539C94.7543 12.7539 93.1448 13.3023 90.3362 13.3023H78.829C76.0208 13.3023 74.377 12.7539 74.377 12.7539C74.377 15.117 74.891 17.4808 78.2813 17.4808H81.569V35.9074C81.569 38.5448 87.4593 38.5448 87.4593 38.5448V17.4808H90.8843ZM98.6923 26.6941C98.6923 24.8104 99.2404 23.7829 100.953 23.7829C102.46 23.7829 103.042 24.6049 103.042 25.8379C103.042 27.3108 101.878 27.7219 100.645 27.7219C99.9254 27.7219 99.2064 27.585 98.6927 27.4481L98.6923 26.6941ZM101.946 38.6134C106.295 38.6134 109.069 36.6614 109.069 34.161C109.069 33.2018 108.658 32.1743 107.836 31.0442C107.802 32.8253 105.679 34.4349 102.117 34.4349C100.028 34.4349 98.6923 33.5786 98.6923 31.6606V31.1125C98.6923 31.1125 99.7544 31.6606 101.501 31.6606C107.22 31.6606 108.761 28.852 108.761 25.8379C108.761 22.1731 106.5 19.7413 101.192 19.7413C95.8838 19.7413 92.9386 22.1731 92.9386 26.1804V32.1743C92.9386 36.2159 96.0893 38.6134 101.946 38.6134ZM117.905 38.4421V24.1941C120.474 23.612 123.625 24.1258 123.625 27.3451C123.625 27.3451 125.714 25.667 125.714 23.2695C125.714 20.5636 123.077 19.7417 120.645 19.7417C118.488 19.7417 116.741 20.4609 115.166 20.4609C114.309 20.4609 113.385 20.2211 112.152 19.639V35.8055C112.152 38.4425 117.905 38.4421 117.905 38.4421ZM133.282 38.4421V24.1941C135.851 23.612 139.002 24.1258 139.002 27.3451C139.002 27.3451 141.091 25.667 141.091 23.2695C141.091 20.5636 138.454 19.7417 136.022 19.7417C133.865 19.7417 132.118 20.4609 130.543 20.4609C129.686 20.4609 128.762 20.2211 127.528 19.639V35.8055C127.528 38.4425 133.282 38.4421 133.282 38.4421ZM152.118 34.3665C152.118 34.3665 150.852 34.7434 149.618 34.7434C148.454 34.7434 147.289 34.4009 147.289 32.791C147.289 30.5991 151.194 31.1469 152.118 29.7086V34.3665ZM149.173 23.8173C151.399 23.8173 152.016 24.7764 152.016 25.5983C150.44 27.8932 141.536 26.7288 141.536 32.9966C141.536 37.312 145.235 38.6134 149.07 38.6134C151.091 38.6134 153.009 37.997 154.824 37.997C155.783 37.997 156.81 38.0996 157.769 38.6134V25.8722C157.769 21.8992 154.824 19.7413 149.241 19.7413C146.879 19.7413 142.015 20.4266 142.015 23.8856C142.015 24.9473 142.324 26.1804 143.591 27.8585C143.591 24.6049 146.536 23.8173 149.173 23.8173Z" fill="#78B833"/><path fill-rule="evenodd" clip-rule="evenodd" d="M144.262 37.6568L147.772 34.1847C148.219 34.6262 148.915 34.7489 149.611 34.7489C150.844 34.7489 152.111 34.3721 152.111 34.3721V29.8928L157.618 24.4453C157.713 24.893 157.761 25.3708 157.761 25.8781V38.6193C156.803 38.1055 155.775 38.0029 154.816 38.0029C153.001 38.0029 151.083 38.6193 149.062 38.6193C147.323 38.6193 145.613 38.3519 144.262 37.6572L144.262 37.6568Z" fill="#2B2A29"/><path d="M172.456 35.8071C172.456 38.3758 178.209 38.4441 178.209 38.4441V25.8058C178.209 21.0449 174.168 19.7432 170.333 19.7432C168.518 19.7432 166.908 20.4625 165.23 20.4625C162.969 20.4625 161.463 19.6406 161.463 19.6406V35.8071C161.463 38.4441 167.217 38.4441 167.217 38.4441V24.1616C167.217 24.1616 168.655 23.8535 169.854 23.8535C171.806 23.8535 172.456 24.7097 172.456 26.3196V35.8071H172.456ZM199.443 26.1826C199.443 22.1753 196.601 19.7436 190.573 19.7436C184.477 19.7436 181.634 22.1753 181.634 26.1826V32.1766C181.634 36.2182 184.477 38.6156 190.573 38.6156C196.601 38.6156 199.443 36.2182 199.443 32.1766V26.1826ZM193.69 31.6625C193.69 33.5465 193.142 34.608 190.573 34.608C187.936 34.608 187.388 33.5462 187.388 31.6625V26.6964C187.388 24.8127 187.936 23.7852 190.573 23.7852C193.142 23.7852 193.69 24.8127 193.69 26.6964V31.6625ZM219.444 19.9145C219.444 19.9145 213.861 19.9145 213.485 22.4492L212.8 27.2444C212.115 32.0053 210.436 33.3753 210.436 33.3753C210.436 33.3753 208.827 32.3135 208.108 27.2444L207.423 22.4492C207.047 19.9145 201.498 19.9145 201.498 19.9145L202.286 26.7307C203.21 34.8479 210.368 39.0264 210.436 39.0607C210.505 39.0264 217.629 34.8479 218.622 26.7307L219.444 19.9145ZM231.738 34.3685C231.738 34.3685 230.471 34.7453 229.238 34.7453C228.074 34.7453 226.909 34.4028 226.909 32.7929C226.909 30.601 230.814 31.1488 231.738 29.7105V34.3685H231.738ZM228.793 23.8192C231.019 23.8192 231.636 24.7783 231.636 25.6002C230.06 27.8951 221.156 26.7307 221.156 32.9985C221.156 37.314 224.855 38.6153 228.691 38.6153C230.711 38.6153 232.629 37.9989 234.444 37.9989C235.403 37.9989 236.431 38.1016 237.389 38.6153V25.8741C237.389 21.9011 234.444 19.7432 228.862 19.7432C226.499 19.7432 221.635 20.4286 221.635 23.8875C221.635 24.9493 221.944 26.1823 223.211 27.8604C223.211 24.6068 226.156 23.8188 228.793 23.8188V23.8192Z" fill="#2B2A29"/><path fill-rule="evenodd" clip-rule="evenodd" d="M161.463 20.6006L162.169 19.9023C162.273 19.9396 162.386 19.9775 162.51 20.016L162.104 37.0921C161.711 36.7486 161.463 36.3151 161.463 35.768V20.6009V20.6006Z" fill="#2B2A29"/><path fill-rule="evenodd" clip-rule="evenodd" d="M79.6427 47.8172C79.474 47.5116 79.2425 47.2695 78.9476 47.1115C78.6524 46.9539 78.3051 46.8694 77.9156 46.8694C77.4838 46.8694 77.094 46.9642 76.757 47.1643C76.4201 47.3644 76.1569 47.6382 75.9675 48.0069C75.7778 48.3753 75.683 48.7968 75.683 49.2707C75.683 49.7657 75.7778 50.1868 75.9779 50.5556C76.1672 50.9243 76.4304 51.1981 76.7781 51.3982C77.1258 51.5983 77.5259 51.6931 77.9784 51.6931C78.5365 51.6931 79.0001 51.5455 79.3581 51.2402C79.7161 50.9453 79.9479 50.5345 80.0635 49.9975H77.5362V48.8709H81.5167V50.1558C81.4218 50.6718 81.2114 51.1454 80.8851 51.5775C80.5585 52.0091 80.1477 52.3567 79.6423 52.6199C79.1263 52.8831 78.5576 53.0203 77.9257 53.0203C77.22 53.0203 76.5777 52.8624 76.0089 52.5361C75.4298 52.2198 74.9873 51.7776 74.661 51.2091C74.3347 50.6404 74.166 49.9978 74.166 49.2714C74.166 48.5446 74.3347 47.9021 74.661 47.3229C74.9873 46.7545 75.4298 46.3123 76.0089 45.9856C76.5777 45.6697 77.2093 45.5117 77.9153 45.5117C78.7469 45.5117 79.4633 45.7118 80.0742 46.1119C80.685 46.5227 81.1062 47.0911 81.338 47.8179H79.6427V47.8172ZM86.4035 52.9562L84.7817 50.0917H84.0867V52.9562H82.6124V45.6056H85.3715C85.9403 45.6056 86.4245 45.7005 86.8247 45.9005C87.2248 46.1006 87.5304 46.3744 87.7304 46.7111C87.9305 47.0588 88.0253 47.4378 88.0253 47.859C88.0253 48.3433 87.8884 48.7754 87.6038 49.1649C87.3196 49.5546 86.9088 49.8282 86.3507 49.9758L88.1095 52.9559H86.4035V52.9562ZM84.0867 48.9862H85.319C85.7192 48.9862 86.0141 48.8913 86.2141 48.6913C86.4142 48.5019 86.509 48.2384 86.509 47.8907C86.509 47.5537 86.4142 47.2906 86.2141 47.1009C86.0141 46.9218 85.7192 46.827 85.319 46.827H84.0867V48.9859V48.9862ZM90.8371 46.7956V48.6385H93.312V49.8075H90.8371V51.7559H93.6279V52.9562H89.3629V45.5949H93.6279V46.7956H90.8371ZM96.4397 46.7956V48.6385H98.9145V49.8075H96.4397V51.7559H99.2305V52.9562H94.9655V45.5949H99.2305V46.7956H96.4397ZM106.855 52.9562H105.38L102.042 47.9121V52.9562H100.568V45.5949H102.042L105.38 50.6498V45.5949H106.855V52.9562ZM112.289 46.7956V48.6385H114.763V49.8075H112.289V51.7559H115.079V52.9562H110.814V45.5949H115.079V46.7956H112.289ZM122.704 52.9562H121.23L117.891 47.9121V52.9562H116.417V45.5949H117.891L121.23 50.6498V45.5949H122.704V52.9562ZM125.631 46.7956V48.6385H128.106V49.8075H125.631V51.7559H128.422V52.9562H124.157V45.5949H128.422V46.7956H125.631ZM133.55 52.9562L131.929 50.0917H131.233V52.9562H129.759V45.6056H132.518C133.087 45.6056 133.571 45.7005 133.971 45.9005C134.372 46.1006 134.677 46.3744 134.877 46.7111C135.077 47.0588 135.172 47.4378 135.172 47.859C135.172 48.3433 135.035 48.7754 134.751 49.1649C134.466 49.5546 134.056 49.8282 133.498 49.9758L135.256 52.9559H133.55V52.9562ZM131.233 48.9862H132.466C132.866 48.9862 133.161 48.8913 133.361 48.6913C133.561 48.5019 133.656 48.2384 133.656 47.8907C133.656 47.5537 133.561 47.2906 133.361 47.1009C133.161 46.9218 132.866 46.827 132.466 46.827H131.233V48.9859V48.9862ZM141.627 47.8172C141.459 47.5116 141.227 47.2695 140.932 47.1115C140.637 46.9539 140.29 46.8694 139.9 46.8694C139.469 46.8694 139.079 46.9642 138.742 47.1643C138.405 47.3644 138.142 47.6382 137.952 48.0069C137.763 48.3753 137.668 48.7968 137.668 49.2707C137.668 49.7657 137.763 50.1868 137.963 50.5556C138.153 50.9243 138.415 51.1981 138.763 51.3982C139.111 51.5983 139.511 51.6931 139.964 51.6931C140.522 51.6931 140.985 51.5455 141.343 51.2402C141.701 50.9453 141.933 50.5345 142.049 49.9975H139.522V48.8709H143.502V50.1558C143.408 50.6718 143.197 51.1454 142.87 51.5775C142.544 52.0091 142.133 52.3567 141.628 52.6199C141.112 52.8831 140.543 53.0203 139.911 53.0203C139.206 53.0203 138.563 52.8624 137.995 52.5361C137.416 52.2198 136.973 51.7776 136.647 51.2091C136.32 50.6404 136.152 49.9978 136.152 49.2714C136.152 48.5446 136.32 47.9021 136.647 47.3229C136.973 46.7545 137.416 46.3123 137.995 45.9856C138.563 45.6697 139.195 45.5117 139.901 45.5117C140.733 45.5117 141.449 45.7118 142.06 46.1119C142.67 46.5227 143.092 47.0911 143.323 47.8179H141.628L141.627 47.8172ZM150.442 45.6059L147.956 50.3973V52.9566H146.482V50.3973L143.986 45.6059H145.65L147.23 48.9655L148.799 45.6059H150.442ZM159.162 47.8804C159.162 48.2701 159.067 48.6385 158.888 48.9862C158.698 49.3335 158.403 49.6074 158.014 49.8181C157.614 50.0289 157.108 50.1341 156.508 50.1341H155.276V52.9562H153.801V45.6056H156.508C157.076 45.6056 157.561 45.7005 157.961 45.9005C158.361 46.1006 158.667 46.3638 158.866 46.7111C159.066 47.0588 159.161 47.4485 159.161 47.88L159.162 47.8804ZM156.445 48.9438C156.855 48.9438 157.15 48.8489 157.35 48.6596C157.55 48.4805 157.645 48.2173 157.645 47.8804C157.645 47.1643 157.245 46.8063 156.445 46.8063H155.276V48.9441H156.445V48.9438ZM163.995 52.9562L162.373 50.0917H161.678V52.9562H160.204V45.6056H162.963C163.532 45.6056 164.016 45.7005 164.416 45.9005C164.817 46.1006 165.122 46.3744 165.322 46.7111C165.522 47.0588 165.617 47.4378 165.617 47.859C165.617 48.3433 165.48 48.7754 165.196 49.1649C164.911 49.5546 164.501 49.8282 163.943 49.9758L165.701 52.9559H163.995V52.9562ZM161.678 48.9862H162.911C163.311 48.9862 163.606 48.8913 163.806 48.6913C164.006 48.5019 164.101 48.2384 164.101 47.8907C164.101 47.5537 164.006 47.2906 163.806 47.1009C163.606 46.9218 163.311 46.827 162.911 46.827H161.678V48.9859V48.9862ZM168.429 45.6056V52.9562H166.954V45.6056H168.429ZM176.485 45.6056L173.789 52.9562H171.999L169.303 45.6056H170.882L172.904 51.45L174.916 45.6056H176.485ZM181.876 51.5555H178.949L178.465 52.9562H176.917L179.56 45.5949H181.277L183.92 52.9562H182.361L181.877 51.5555H181.876ZM181.476 50.3762L180.413 47.3012L179.349 50.3762H181.476ZM189.912 45.6059V46.7959H187.953V52.9566H186.479V46.7959H184.52V45.6059H189.912H189.912ZM192.46 46.7959V48.6388H194.935V49.8078H192.46V51.7562H195.251V52.9566H190.986V45.5952H195.251V46.7959H192.46ZM200.569 51.7876H202.991V52.9566H199.094V45.6059H200.569V51.7876H200.569ZM205.403 45.6059V52.9566H203.928V45.6059H205.403ZM214.87 45.6059V52.9566H213.396V48.1753L211.426 52.9566H210.31L208.33 48.1753V52.9566H206.856V45.6059H208.53L210.868 51.0712L213.206 45.6059H214.87ZM217.797 45.6059V52.9566H216.323V45.6059H217.797ZM224.253 45.6059V46.7959H222.294V52.9566H220.82V46.7959H218.861V45.6059H224.253ZM226.801 46.7959V48.6388H229.276V49.8078H226.801V51.7562H229.592V52.9566H225.327V45.5952H229.592V46.7959H226.801ZM233.498 45.6059C234.267 45.6059 234.952 45.7532 235.541 46.0585C236.121 46.3637 236.573 46.7852 236.9 47.3433C237.216 47.9014 237.374 48.5543 237.374 49.2914C237.374 50.0289 237.216 50.6708 236.9 51.2185C236.573 51.7766 236.121 52.1978 235.541 52.5034C234.952 52.8086 234.267 52.9562 233.498 52.9562H230.929V45.6056H233.498V45.6059ZM233.446 51.7031C234.215 51.7031 234.815 51.4927 235.236 51.0712C235.658 50.6501 235.868 50.0606 235.868 49.2918C235.868 48.5229 235.658 47.9228 235.236 47.4909C234.815 47.0594 234.215 46.8487 233.446 46.8487H232.404V51.7031H233.446Z" fill="#2B2A29"/><path d="M240.331 9C241.001 9 241.654 9.1719 242.293 9.51634C242.93 9.85948 243.429 10.3525 243.784 10.9915C244.14 11.6325 244.319 12.3003 244.319 12.9934C244.319 13.6813 244.144 14.3436 243.792 14.9775C243.442 15.6132 242.95 16.1059 242.317 16.4562C241.683 16.8081 241.02 16.9835 240.331 16.9835C239.64 16.9835 238.977 16.8084 238.343 16.4562C237.71 16.1059 237.217 15.6132 236.865 14.9775C236.513 14.3439 236.336 13.6813 236.336 12.9934C236.336 12.3003 236.515 11.6325 236.872 10.9915C237.231 10.3525 237.73 9.85948 238.367 9.51634C239.006 9.17158 239.659 9 240.331 9ZM240.331 9.66071C239.769 9.66071 239.223 9.80542 238.692 10.0922C238.161 10.3794 237.746 10.7908 237.446 11.3253C237.147 11.8597 236.996 12.4159 236.996 12.9934C236.996 13.5693 237.144 14.1199 237.439 14.6473C237.733 15.1743 238.145 15.586 238.674 15.8803C239.203 16.1745 239.755 16.3228 240.331 16.3228C240.905 16.3228 241.457 16.1749 241.986 15.8803C242.515 15.586 242.927 15.1746 243.219 14.6473C243.511 14.1202 243.658 13.5693 243.658 12.9934C243.658 12.4159 243.508 11.8597 243.21 11.3253C242.912 10.7911 242.497 10.3794 241.964 10.0922C241.432 9.80509 240.887 9.66071 240.331 9.66071H240.331ZM238.578 15.1956V10.9064H240.055C240.56 10.9064 240.925 10.9459 241.151 11.0252C241.378 11.1045 241.557 11.2417 241.692 11.4405C241.826 11.6373 241.893 11.8468 241.893 12.0688C241.893 12.3812 241.781 12.6557 241.555 12.8869C241.331 13.1196 241.033 13.2494 240.661 13.2783C240.813 13.3417 240.936 13.4175 241.026 13.5058C241.199 13.6738 241.411 13.9571 241.661 14.3562L242.185 15.1956H241.344L240.961 14.5204C240.661 13.9882 240.417 13.6538 240.234 13.5204C240.107 13.4226 239.923 13.3741 239.679 13.3757H239.271V15.1953H238.578V15.1956ZM239.271 12.78H240.112C240.515 12.78 240.79 12.7208 240.936 12.6014C241.082 12.4822 241.156 12.3233 241.156 12.1284C241.156 12.0018 241.12 11.8882 241.05 11.7888C240.979 11.6878 240.882 11.6137 240.757 11.5651C240.631 11.5163 240.4 11.491 240.06 11.491H239.271V12.7797L239.271 12.78Z" fill="#2B2A29"/></svg></span>
-      <span class="chip" style="background:#EFF6E3;color:#4c7a17">CRM</span>
+      <span class="chip chip-brand">CRM</span>
       <div class="hspace"></div>
       <select id="statepick" hidden></select>
       <div id="whoami"><div class="n"></div><div class="r"></div></div>
-      <button class="btn btn-ghost btn-sm" id="logout">Sign out</button>
+      <button id="logout">Sign out</button>
     </div>
     <nav><div class="nwrap" id="navtabs"></div></nav>
   </header>
@@ -155,10 +313,10 @@ td{padding:9px 8px;border-bottom:1px solid #f0f0ee;font-size:13.5px;vertical-ali
 <div id="toast"></div>
 
 <script>
-/* ================= Terranova Sales CRM — Phase 1 =================
-   Per Terranova_SalesCRM_Phase1BuildSpec_v1 (21 July 2026).
-   State isolation is enforced by Supabase RLS — the UI only ever
-   receives rows the logged-in role is allowed to see.            */
+/* ================= Terranova Sales CRM — Phase 1 (redesigned UI) =================
+   Visual layer per the Claude Design handover (tokens.css + component-specs).
+   Data, auth and the state-isolation rule are unchanged — RLS enforces scoping
+   server-side; the UI only ever receives rows the logged-in role may see.      */
 
 const SUPABASE_URL = 'https://vikexhtaltbafugasizz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_4sIGGckq48fu3T30Hzr5aQ_7ft7A45s';
@@ -169,6 +327,13 @@ const STAGES = ['lead','qualified','negotiation','won','lost'];
 const STAGE_LABEL = {lead:'Lead',qualified:'Qualified',negotiation:'Negotiation',won:'Won',lost:'Lost'};
 const ROLE_LABEL = {ceo:'CEO',coo:'COO',sales_head:'Sales Head (South)',rsm:'RSM',asm:'ASM',sales_executive:'Sales Executive',admin_entry:'Admin Entry'};
 const LEADERS = ['ceo','coo','sales_head'];
+const NAV_ICONS = {
+  dash:'<svg viewBox="0 0 18 18"><rect x="2" y="2" width="6" height="6" rx="1" fill="currentColor"/><rect x="10" y="2" width="6" height="6" rx="1" fill="currentColor"/><rect x="2" y="10" width="6" height="6" rx="1" fill="currentColor"/><rect x="10" y="10" width="6" height="6" rx="1" fill="currentColor"/></svg>',
+  pipeline:'<svg viewBox="0 0 18 18"><rect x="2" y="8" width="3" height="8" fill="currentColor"/><rect x="7.5" y="4" width="3" height="12" fill="currentColor"/><rect x="13" y="1" width="3" height="15" fill="currentColor"/></svg>',
+  myday:'<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="2"/><line x1="9" y1="9" x2="9" y2="5" stroke="currentColor" stroke-width="2"/><line x1="9" y1="9" x2="12" y2="10" stroke="currentColor" stroke-width="2"/></svg>',
+  dealers:'<svg viewBox="0 0 18 18"><rect x="2" y="6" width="14" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2 6 L4.5 2.5 H13.5 L16 6" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  team:'<svg viewBox="0 0 18 18"><circle cx="6.5" cy="7" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="8.5" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M1.5 15.5 C2.5 12.5 5 11.5 6.5 11.5 C8 11.5 10.5 12.5 11.5 15.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
+};
 
 let me=null, cache={profiles:[],dealers:[],deals:[],products:[],slabs:[],targets:[],activities:[]};
 let curView='dash', stateFilter='', showRemoved=false, pipeSeg='';
@@ -177,15 +342,15 @@ let curView='dash', stateFilter='', showRemoved=false, pipeSeg='';
 const $=s=>document.querySelector(s);
 const esc=s=>(s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const inr=n=>n==null?'—':'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0});
-const dstr=d=>d?new Date(d+ (d.length===10?'T00:00:00':'')).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'—';
+const dstr=d=>d?new Date(d+(d.length===10?'T00:00:00':'')).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'—';
 const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const monthStartISO=()=>todayISO().slice(0,8)+'01';
 function weekStart(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);d.setHours(0,0,0,0);return d;}
 const isLeader=()=>LEADERS.includes(me.role);
 const isField=()=>['rsm','asm','sales_executive'].includes(me.role);
 const nameOf=id=>{const p=cache.profiles.find(p=>p.id===id);return p?p.full_name:'—';};
-function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600);}
-function fail(e){console.error(e);toast('⚠ '+(e?.message||'Something went wrong'));}
+function toast(m,kind){const t=$('#toast');t.textContent=m;t.className='show'+(kind?' '+kind:'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='',2600);}
+function fail(e){console.error(e);toast('⚠ '+(e?.message||'Something went wrong'),'err');}
 
 /* ---------- auth ---------- */
 $('#lbtn').onclick=signin;
@@ -203,7 +368,7 @@ async function boot(){
   if(!session){$('#login').style.display='flex';$('#app').style.display='none';return;}
   const {data:prof,error}=await db.from('profiles').select('*').eq('id',session.user.id).single();
   if(error||!prof){fail(error||{message:'No profile found for this login.'});await db.auth.signOut();return;}
-  if(prof.status!=='active'){toast('This account is deactivated.');await db.auth.signOut();return;}
+  if(prof.status!=='active'){toast('This account is deactivated.','err');await db.auth.signOut();return;}
   me=prof;
   $('#login').style.display='none';$('#app').style.display='block';
   $('#whoami .n').textContent=me.full_name;
@@ -220,16 +385,12 @@ async function boot(){
 }
 
 function buildNav(){
-  const tabs=[['dash','Dashboard','M3 13h6V3H3v10zm0 8h6v-6H3v6zm8 0h10V11H11v10zm0-18v6h10V3H11z'],
-              ['pipeline','Pipeline','M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v7h-4z'],
-              ['myday','My Day','M12 8v5l3.5 2 .8-1.3-2.8-1.7V8zM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z'],
-              ['dealers','Dealers','M12 2 2 7v2h20V7zM4 11v8H2v2h20v-2h-2v-8h-3v8h-3v-8h-4v8H7v-8z'],
-              ['team','Team','M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 1a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0 2c-2.3 0-7 1.2-7 3.5V20h8v-2.5c0-1 .5-1.9 1.4-2.6A11 11 0 0 0 8 14zm8-1c-2.7 0-8 1.3-8 4v3h16v-3c0-2.7-5.3-4-8-4z']];
+  const tabs=[['dash','Dashboard'],['pipeline','Pipeline'],['myday','My Day'],['dealers','Dealers'],['team','Team']];
   $('#navtabs').innerHTML=tabs.filter(([k])=>{
     if(k==='myday'&&!isField())return false;
     if(k==='team'&&me.role==='admin_entry')return false;
     return true;
-  }).map(([k,l,p])=>`<button data-v="${k}" class="${k===curView?'on':''}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="${p}"/></svg>${l}</button>`).join('');
+  }).map(([k,l])=>`<button data-v="${k}" class="${k===curView?'on':''}">${NAV_ICONS[k]}<span>${l}</span></button>`).join('');
   $('#navtabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{curView=b.dataset.v;render();});
 }
 
@@ -257,12 +418,23 @@ const visDealers=()=>cache.dealers.filter(x=>(!stateFilter||stateFilter==='__hq_
 function render(){
   buildNav();
   const v=$('#view');
-  if(curView==='dash')v.innerHTML=rDash();
-  else if(curView==='pipeline')v.innerHTML=rPipeline();
-  else if(curView==='myday')v.innerHTML=rMyDay();
-  else if(curView==='dealers')v.innerHTML=rDealers();
-  else if(curView==='team')v.innerHTML=rTeam();
+  let html='';
+  if(curView==='dash')html=rDash();
+  else if(curView==='pipeline')html=rPipeline();
+  else if(curView==='myday')html=rMyDay();
+  else if(curView==='dealers')html=rDealers();
+  else if(curView==='team')html=rTeam();
+  v.innerHTML=`<div class="viewwrap">${html}</div>`;
   bindView();
+  requestAnimationFrame(animateIn);
+}
+function animateIn(){
+  document.querySelectorAll('circle.arc').forEach(c=>{
+    const off=c.dataset.off; requestAnimationFrame(()=>c.style.strokeDashoffset=off);
+  });
+  document.querySelectorAll('.pbar > div').forEach(b=>{
+    const w=b.dataset.w; requestAnimationFrame(()=>b.style.width=w+'%');
+  });
 }
 
 /* ===== Dashboard ===== */
@@ -278,10 +450,11 @@ function rDash(){
   const tgts=cache.targets.filter(t=>!stateFilter||stateFilter==='__hq__'||t.state===stateFilter);
   const tgtVal=tgts.reduce((s,t)=>s+(+t.target_amount||0),0);
   const pct=tgtVal? Math.min(100,Math.round(mtdVal/tgtVal*100)) : 0;
+  const C=226; // ring circumference (r=36)
+  const ringOff=C*(1-pct/100);
   const in7=new Date(Date.now()+7*864e5);
   const closing=open.filter(d=>d.expected_close&&new Date(d.expected_close)<=in7).sort((a,b)=>(a.expected_close||'').localeCompare(b.expected_close||''));
 
-  // update status: who has logged activity today (green), yesterday (amber), older (red)
   const team=cache.profiles.filter(p=>['rsm','asm'].includes(p.role)&&p.status==='active'&&(!stateFilter||stateFilter==='__hq__'||p.state===stateFilter));
   const t0=todayISO(), y0=new Date(Date.now()-864e5).toISOString().slice(0,10);
   const rows=team.map(p=>{
@@ -289,24 +462,41 @@ function rDash(){
     const last=acts.length?acts[0].created_at.slice(0,10):null;
     const cls=last===t0?'d-g':last===y0?'d-a':'d-r';
     const lbl=last===t0?'Updated today':last===y0?'Updated yesterday':last?('Last update '+dstr(last)):'No updates yet';
-    return `<div class="row"><span class="dot ${cls}"></span><b style="flex:1">${esc(p.full_name)}</b>
-      <span class="small muted">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}</span>
-      <span class="small" style="width:130px;text-align:right">${lbl}</span></div>`;}).join('');
+    return `<div class="row"><span class="dot ${cls}"></span>
+      <div style="flex:1"><div style="font-size:14px;font-weight:700">${esc(p.full_name)}</div>
+      <div class="small muted">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}</div></div>
+      <span class="small" style="color:var(--text-2);font-weight:600;flex-shrink:0">${lbl}</span></div>`;}).join('');
 
-  return `<div class="pagehead"><div><h2>Dashboard</h2><div class="small muted">${isLeader()?(stateFilter?(stateFilter==='__hq__'?'HQ / national view':stateFilter):'All 5 states'):(me.state||'')}${me.districts?.length?' · '+me.districts.join(', '):''}</div></div></div>
+  return `<div class="pagehead"><div><h2>Dashboard</h2><div class="sub">${isLeader()?(stateFilter?(stateFilter==='__hq__'?'HQ / national view':stateFilter):'All 5 states'):(me.state||'')}${me.districts?.length?' · '+me.districts.join(', '):''}</div></div></div>
   <div class="kpis">
-    <div class="card kpi"><div class="lbl">Open pipeline</div><div class="val">${inr(openVal)}</div><div class="sub">${open.length} open deal${open.length===1?'':'s'}</div></div>
-    <div class="card kpi"><div class="lbl">Booked this week</div><div class="val">${inr(wkVal)}</div><div class="sub">${wonWk.length} won since Monday</div></div>
-    <div class="card kpi"><div class="lbl">Booked this month vs target</div><div class="val">${inr(mtdVal)}</div>
-      <div class="sub">${tgtVal?('of '+inr(tgtVal)+' target · '+pct+'%'):'no target set for this month'}</div>
-      <div class="prog"><div style="width:${pct}%"></div></div></div>
-  </div>
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
-    <div class="card"><h3 style="font-size:15px;margin-bottom:6px">Deals closing this week</h3>
-      ${closing.length?closing.map(d=>`<div class="row"><div style="flex:1"><b class="small">${esc(d.title)}</b><div class="small muted">${esc(dealerName(d))}${d.state?' · '+esc(d.state):' · HQ'}</div></div>
-        <div style="text-align:right"><div class="small"><b>${inr(d.deal_size)}</b></div><div class="small muted">${dstr(d.expected_close)}</div></div></div>`).join(''):'<div class="empty">Nothing due in the next 7 days</div>'}
+    <div class="kpi ${openVal>0?'live':''}"><div class="accent"></div>
+      <div class="eyebrow">Open Pipeline</div><div class="val">${inr(openVal)}</div>
+      <div class="sub">${open.length} open deal${open.length===1?'':'s'}</div></div>
+    <div class="kpi ${wkVal>0?'live':''}"><div class="accent"></div>
+      <div class="eyebrow">Booked This Week</div><div class="val">${inr(wkVal)}</div>
+      <div class="sub">${wonWk.length} won since Monday</div></div>
+    <div class="kpi kpi-ring">
+      <svg width="86" height="86" viewBox="0 0 86 86">
+        <circle cx="43" cy="43" r="36" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="9"/>
+        <circle class="arc" cx="43" cy="43" r="36" fill="none" stroke="var(--brand)" stroke-width="9" stroke-linecap="round"
+          stroke-dasharray="${C}" stroke-dashoffset="${C}" data-off="${ringOff}" transform="rotate(-90 43 43)"/>
+        <text x="43" y="49" text-anchor="middle" font-size="18" font-weight="800" fill="#fff" font-family="var(--font)">${pct}%</text>
+      </svg>
+      <div><div class="eyebrow">Booked This Month vs Target</div>
+        <div class="val">${inr(mtdVal)}</div>
+        <div class="sub">${tgtVal?('of '+inr(tgtVal)+' target'):'no target set for this month'}</div></div>
     </div>
-    <div class="card"><h3 style="font-size:15px;margin-bottom:6px">Field update status</h3>
+  </div>
+  <div class="dashgrid">
+    <div class="card"><h3>Deals closing this week</h3>
+      ${closing.length?closing.map(d=>`<div class="row"><div style="flex:1">
+        <div style="font-size:14px;font-weight:700">${esc(d.title)}</div>
+        <div class="small" style="color:var(--text-2);margin-top:2px">${esc(dealerName(d))}${d.state?' · '+esc(d.state):' · HQ'}</div></div>
+        <div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:800" class="tnum">${inr(d.deal_size)}</div>
+        <div class="small muted" style="margin-top:2px">${dstr(d.expected_close)}</div></div></div>`).join('')
+      :'<div class="empty">Nothing due in the next 7 days</div>'}
+    </div>
+    <div class="card"><h3>Field update status</h3>
       ${rows||'<div class="empty">No RSM/ASM visible</div>'}
     </div>
   </div>`;
@@ -318,29 +508,36 @@ function rPipeline(){
   let deals=visDeals();
   if(pipeSeg)deals=deals.filter(d=>d.segment===pipeSeg);
   const canCreate=me.role!=='sales_executive';
+  const sparkles=`<svg class="spark" width="14" height="14" viewBox="0 0 16 16" style="top:2px;left:16%;opacity:.6"><circle cx="8" cy="8" r="3" fill="var(--brand)"/></svg>
+    <svg class="spark" width="9" height="9" viewBox="0 0 16 16" style="top:26px;right:20%;opacity:.5;animation-delay:.5s"><circle cx="8" cy="8" r="3" fill="var(--brand-deep)"/></svg>
+    <svg class="spark" width="7" height="7" viewBox="0 0 16 16" style="bottom:8px;left:32%;opacity:.45;animation-delay:1s"><circle cx="8" cy="8" r="3" fill="var(--amber)"/></svg>`;
   const cols=STAGES.map(st=>{
     const list=deals.filter(d=>d.stage===st);
     const val=list.reduce((s,d)=>s+(+d.deal_size||0),0);
-    return `<div class="kcol"><h4>${STAGE_LABEL[st]} · ${list.length}<span class="sum">${inr(val)}</span></h4>
+    return `<div class="kcol kc-${st}">
+    <div class="kcolhead ${val>0?'has':''}"><span>${STAGE_LABEL[st].toUpperCase()} · ${list.length}</span><span class="sum">${inr(val)}</span></div>
+    <div class="kcards">
     ${list.map(d=>{
       const i=STAGES.indexOf(st), canEdit=me.role!=='admin_entry';
-      return `<div class="kcard stage-${st} ${d.segment}" data-deal="${d.id}">
+      return `<div class="kcard stage-${st}" data-deal="${d.id}">
       <div class="t">${esc(d.title)}</div>
-      <div class="m">${esc(dealerName(d))} · ${d.segment.toUpperCase()}${d.state?' · '+esc(d.state):' · HQ'}</div>
-      ${d.next_action?`<div class="m">→ ${esc(d.next_action)}</div>`:''}
-      <div class="amt">${inr(d.deal_size)}${d.expected_close?`<span class="small muted" style="font-weight:600"> · ${dstr(d.expected_close)}</span>`:''}</div>
-      ${canEdit?`<div class="mv">
-        <button data-mv="-1" ${i===0?'disabled style="opacity:.3"':''}>◀</button>
-        <span class="small muted">${esc(nameOf(d.owner))}</span>
-        <button data-mv="1" ${i===STAGES.length-1?'disabled style="opacity:.3"':''}>▶</button></div>`
-      :`<div class="m muted">${esc(nameOf(d.owner))}</div>`}
-      </div>`;}).join('')||'<div class="empty small">—</div>'}
-    </div>`;}).join('');
-  return `<div class="pagehead"><div><h2>Pipeline</h2><div class="small muted">Lead → Qualified → Negotiation → Won / Lost</div></div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <div class="seg" id="segpick"><button data-s="" class="${pipeSeg===''?'on':''}">All</button><button data-s="b2b" class="${pipeSeg==='b2b'?'on':''}">B2B</button><button data-s="b2c" class="${pipeSeg==='b2c'?'on':''}">B2C</button></div>
-      ${canCreate?`<button class="btn btn-primary btn-sm" id="adddeal">+ ${me.role==='admin_entry'?'New lead':'New deal'}</button>`:''}
-    </div></div>
+      <div class="meta"><span class="badge">${d.segment.toUpperCase()}</span>${esc(dealerName(d))}${d.state?' · '+esc(d.state):' · HQ'}</div>
+      ${d.next_action?`<div class="na">→ ${esc(d.next_action)}</div>`:''}
+      <div class="amtrow"><span class="amt">${inr(d.deal_size)}</span><span class="date">${d.expected_close?dstr(d.expected_close):''}</span></div>
+      <div class="hairline"></div>
+      ${canEdit?`<div class="foot">
+        <button class="mv back" data-mv="-1" ${i===0?'disabled':''}>◀</button>
+        <span class="owner">${esc(nameOf(d.owner))}</span>
+        <button class="mv fwd" data-mv="1" ${i===STAGES.length-1?'disabled':''}>▶</button></div>`
+      :`<div class="foot"><span class="owner">${esc(nameOf(d.owner))}</span></div>`}
+      </div>`;}).join('')||
+      (st==='won'?`<div class="kempty">${sparkles}Ready for your first win</div>`:'<div class="kempty">—</div>')}
+    </div></div>`;}).join('');
+  return `<div class="pagehead"><div><h2>Pipeline</h2><div class="sub">Lead → Qualified → Negotiation → Won / Lost</div></div></div>
+  <div class="filters">
+    <div class="seg" id="segpick"><button data-s="" class="${pipeSeg===''?'on':''}">All</button><button data-s="b2b" class="${pipeSeg==='b2b'?'on':''}">B2B</button><button data-s="b2c" class="${pipeSeg==='b2c'?'on':''}">B2C</button></div>
+    ${canCreate?`<button class="btn btn-primary btn-sm" id="adddeal" style="margin-left:auto">+ ${me.role==='admin_entry'?'New lead':'New deal'}</button>`:''}
+  </div>
   <div class="kanban">${cols}</div>`;
 }
 
@@ -353,54 +550,56 @@ function rMyDay(){
   const upcoming=mine.filter(a=>['task','call','visit'].includes(a.type)&&!a.done&&(!a.due_date||a.due_date>t0)).slice(0,10);
   const todayLog=mine.filter(a=>a.created_at.slice(0,10)===t0&&(a.type==='check_in'||a.type==='visit'||a.done));
   const ci=mine.find(a=>a.type==='check_in'&&a.created_at.slice(0,10)===t0);
-  const typeIcon={task:'☐',call:'📞',visit:'📍',check_in:'✔',note:'✎'};
-  const li=a=>`<div class="row"><span>${typeIcon[a.type]||'☐'}</span>
-      <div style="flex:1"><b class="small">${esc(a.title||a.type)}</b>
+  const li=(a,done)=>`<div class="row">
+      <span class="tick ${done?'done':''}">${done?'✓':''}</span>
+      <div style="flex:1"><div style="font-size:14px;font-weight:700">${esc(a.title||a.type)}</div>
       <div class="small muted">${a.dealer_id?esc((cache.dealers.find(d=>d.id===a.dealer_id)||{}).name||''):''}${a.due_date?' · due '+dstr(a.due_date):''}${a.notes?' · '+esc(a.notes):''}</div></div>
-      ${!a.done?`<button class="btn btn-ghost btn-sm" data-done="${a.id}">Done</button>`:'<span class="chip" style="background:#EFF6E3;color:#4c7a17">done</span>'}</div>`;
-  return `<div class="pagehead"><div><h2>My Day</h2><div class="small muted">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn ${ci?'btn-ghost':'btn-dark'} btn-sm" id="checkin">${ci?'✔ Checked in '+new Date(ci.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'📍 Check in'}</button>
-      <button class="btn btn-primary btn-sm" id="logvisit">+ Log a visit</button>
-      <button class="btn btn-ghost btn-sm" id="addtask">+ Task</button>
-    </div></div>
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
-    <div class="card"><h3 style="font-size:15px;margin-bottom:6px">Due today${tasks.length?` (${tasks.length})`:''}</h3>
-      ${tasks.length?tasks.map(li).join(''):'<div class="empty">Nothing due — add a task or log a visit</div>'}</div>
-    <div class="card"><h3 style="font-size:15px;margin-bottom:6px">Upcoming</h3>
-      ${upcoming.length?upcoming.map(li).join(''):'<div class="empty">No upcoming tasks</div>'}</div>
-    <div class="card"><h3 style="font-size:15px;margin-bottom:6px">Logged today</h3>
-      ${todayLog.length?todayLog.map(li).join(''):'<div class="empty">No activity logged yet today</div>'}</div>
+      ${!a.done?`<button class="btn btn-ghost btn-sm" data-done="${a.id}" style="background:var(--sunken)">Done</button>`:'<span class="donepill">done</span>'}</div>`;
+  return `<div class="pagehead"><div><h2>My Day</h2><div class="sub">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div></div></div>
+  <div class="actions" style="margin-bottom:14px">
+    <button class="btn btn-ghost${ci?' done':''}" id="checkin">${ci?`<span class="dot"></span>✓ Checked in ${new Date(ci.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`:'📍 Check in'}</button>
+    <button class="btn btn-primary" id="logvisit">+ Log a visit</button>
+    <button class="btn btn-ghost" id="addtask">+ Task</button>
+  </div>
+  <div class="dashgrid" style="grid-template-columns:1fr">
+    <div class="card"><h3>Due today${tasks.length?` (${tasks.length})`:''}</h3>
+      ${tasks.length?tasks.map(a=>li(a,false)).join(''):'<div class="empty">Nothing due — add a task or log a visit</div>'}</div>
+    <div class="card"><h3>Upcoming</h3>
+      ${upcoming.length?upcoming.map(a=>li(a,false)).join(''):'<div class="empty">No upcoming tasks</div>'}</div>
+    <div class="card"><h3>Logged today</h3>
+      ${todayLog.length?todayLog.map(a=>li(a,true)).join(''):'<div class="empty">No activity logged yet today</div>'}</div>
   </div>`;
 }
 
 /* ===== Dealers ===== */
 function rDealers(){
   const list=visDealers().filter(d=>{
-    const q=($('#dq')?.value||window._dq||'').toLowerCase();
+    const q=(window._dq||'').toLowerCase();
     return !q||d.name.toLowerCase().includes(q)||(d.district||'').toLowerCase().includes(q)||(d.contact_person||'').toLowerCase().includes(q);
   });
   const canAdd=me.role!=='sales_executive';
-  return `<div class="pagehead"><div><h2>Dealers &amp; Territory</h2><div class="small muted">${isLeader()||me.role==='admin_entry'?'All states':(me.state||'')+(me.districts?.length?' · '+me.districts.join(', '):'')}</div></div>
-    ${canAdd?'<button class="btn btn-primary btn-sm" id="adddealer">+ Add dealer</button>':''}</div>
-  <div class="filters">
-    <input id="dq" placeholder="Search name / district / contact" value="${esc(window._dq||'')}" style="flex:1;min-width:170px">
-    <label class="small" style="display:flex;align-items:center;gap:6px;margin:0;font-weight:600"><input type="checkbox" id="showrm" style="width:auto" ${showRemoved?'checked':''}> show removed</label>
+  return `<div class="pagehead"><div><h2>Dealers &amp; Territory</h2><div class="sub">${isLeader()||me.role==='admin_entry'?'All states':(me.state||'')+(me.districts?.length?' · '+me.districts.join(', '):'')}</div></div></div>
+  <div class="dsearch">
+    <input id="dq" placeholder="Search dealers, district, contact…" value="${esc(window._dq||'')}">
+    ${canAdd?'<button class="btn btn-primary" id="adddealer" style="white-space:nowrap">+ Add</button>':''}
   </div>
-  <div class="card" style="padding:6px 12px;overflow-x:auto"><table><thead><tr>
-    <th>Name</th><th>Type</th><th>State / District</th><th>Contact</th><th>RSM / ASM</th><th></th></tr></thead><tbody>
-    ${list.map(d=>`<tr ${d.status==='removed'?'style="opacity:.5"':''}>
-      <td><b>${esc(d.name)}</b>${d.status==='removed'?' <span class="chip" style="background:#f7e2e1;color:#a33">removed</span>':''}</td>
-      <td>${d.type}</td>
-      <td>${esc(d.state)}${d.district?' / '+esc(d.district):''}</td>
-      <td>${esc(d.contact_person||'—')}<div class="small muted">${esc(d.phone||'')}</div></td>
-      <td class="small">${esc(nameOf(d.assigned_rsm))}${d.assigned_asm?'<div class="muted">'+esc(nameOf(d.assigned_asm))+'</div>':''}</td>
-      <td style="white-space:nowrap;text-align:right">
-        <button class="btn btn-ghost btn-sm" data-hist="${d.id}">History</button>
-        <button class="btn btn-ghost btn-sm" data-editdealer="${d.id}">Edit</button>
-      </td></tr>
-      <tr id="hist-${d.id}" hidden><td colspan="6"><div class="audit" id="histbody-${d.id}">Loading…</div></td></tr>`).join('')||'<tr><td colspan="6"><div class="empty">No dealers yet — add the first one</div></td></tr>'}
-  </tbody></table></div>`;
+  <label class="switchrow"><input type="checkbox" id="showrm" ${showRemoved?'checked':''}><span class="switch"></span>Show removed</label>
+  <div class="dealerlist">
+    ${list.map(d=>`<div class="card dcard lift" ${d.status==='removed'?'style="opacity:.55"':''}>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="nm">${esc(d.name)}${d.status==='removed'?' <span class="badge-removed">removed</span>':''}</div>
+        <div class="small" style="color:var(--text-2);margin-top:2px">${esc(d.state)}${d.district?' · '+esc(d.district):''}</div></div>
+        <span class="badge">${d.type}</span>
+      </div>
+      <div class="small" style="color:var(--text-2)">${esc(d.contact_person||'—')}${d.phone?' · '+esc(d.phone):''}</div>
+      <div class="small" style="color:var(--text-2)">RSM ${esc(nameOf(d.assigned_rsm))}${d.assigned_asm?' · '+esc(nameOf(d.assigned_asm)):''}</div>
+      <div class="actionsrow">
+        <button class="btn btn-ghost" style="background:var(--sunken)" data-hist="${d.id}">History</button>
+        <button class="btn btn-ghost" data-editdealer="${d.id}">Edit</button>
+      </div>
+      <div id="hist-${d.id}" hidden><div class="audit" id="histbody-${d.id}">Loading…</div></div>
+    </div>`).join('')||'<div class="card"><div class="empty">No dealers yet — add the first one</div></div>'}
+  </div>`;
 }
 
 /* ===== Team & Incentives ===== */
@@ -413,27 +612,46 @@ function slabFor(v){let s=null;for(const x of cache.slabs)if(v>=+x.threshold)s=x
 function rTeam(){
   const team=cache.profiles.filter(p=>['rsm','asm'].includes(p.role)&&p.status==='active'&&(!stateFilter||stateFilter==='__hq__'||p.state===stateFilter))
     .sort((a,b)=>(a.state||'').localeCompare(b.state||'')||a.role.localeCompare(b.role));
-  return `<div class="pagehead"><div><h2>Team &amp; Incentives</h2><div class="small muted">Month-to-date actuals vs slab targets — visible daily, not just month-end</div></div></div>
-  <div class="card" style="padding:6px 12px;overflow-x:auto"><table><thead><tr>
-    <th>Member</th><th>Role · State</th><th>Target (month)</th><th>Booked MTD</th><th>Progress</th><th>Slab</th><th>Incentive MTD</th></tr></thead><tbody>
-    ${team.map(p=>{
-      const tgt=cache.targets.find(t=>t.user_id===p.id);
-      const mtd=mtdWonBy(p.id);
-      const pct=tgt&&+tgt.target_amount?Math.min(100,Math.round(mtd/+tgt.target_amount*100)):0;
-      const slab=slabFor(mtd);
-      const inc=slab?mtd*+slab.rate:0;
-      return `<tr><td><b>${esc(p.full_name)}</b></td>
-      <td class="small">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}</td>
-      <td>${tgt?inr(tgt.target_amount):'—'}</td>
-      <td><b>${inr(mtd)}</b></td>
-      <td style="min-width:110px"><div class="prog"><div style="width:${pct}%"></div></div><span class="small muted">${pct}%</span></td>
-      <td class="small">${slab?esc(slab.label)+' ('+(+slab.rate*100).toFixed(2).replace(/\.?0+$/,'')+'%)':'below ₹5L'}</td>
-      <td><b>${inr(Math.round(inc))}</b></td></tr>`;}).join('')||'<tr><td colspan="7"><div class="empty">No team members visible</div></td></tr>'}
-  </tbody></table></div>
-  <div class="card" style="margin-top:12px"><h3 style="font-size:14px;margin-bottom:6px">Incentive slabs</h3>
-    <div class="small muted" style="margin-bottom:8px">From the existing incentive scheme (Terranova CRM workbook, incentive-sales tab)</div>
-    ${cache.slabs.map(s=>`<div class="row"><b class="small" style="flex:1">Reach ${esc(s.label)} (${inr(s.threshold)})</b><span class="small">${(+s.rate*100).toFixed(2).replace(/\.?0+$/,'')}% of sales</span></div>`).join('')}
+  const calc=p=>{
+    const tgt=cache.targets.find(t=>t.user_id===p.id);
+    const mtd=mtdWonBy(p.id);
+    const pct=tgt&&+tgt.target_amount?Math.min(100,Math.round(mtd/+tgt.target_amount*100)):0;
+    const slab=slabFor(mtd);
+    const inc=slab?mtd*+slab.rate:0;
+    return {tgt,mtd,pct,slab,inc};
+  };
+  const ratefmt=r=>(+r*100).toFixed(2).replace(/\.?0+$/,'')+'%';
+  const slabsCard=`<div class="card slabcard"><h3>Incentive slabs</h3>
+    <div class="sub">From the existing incentive scheme (Terranova CRM workbook, incentive-sales tab)</div>
+    ${cache.slabs.map(s=>`<div class="srow"><span>Reach ${esc(s.label)} (${inr(s.threshold)})</span><span class="srate">${ratefmt(s.rate)} of sales</span></div>`).join('')}
   </div>`;
+  const cards=team.map(p=>{
+    const {tgt,mtd,pct,slab,inc}=calc(p);
+    return `<div class="card tcard lift">
+      <div class="toprow"><div><div class="nm">${esc(p.full_name)}</div>
+        <div class="small muted">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}</div></div>
+        <span class="slabchip">${slab?esc(slab.label):'below ₹5L'}</span></div>
+      <div class="nums"><span>Booked MTD <b>${inr(mtd)}</b></span><span>Target <b>${tgt?inr(tgt.target_amount):'—'}</b></span></div>
+      <div class="pbar"><div style="width:0%" data-w="${pct}"></div></div>
+      <div class="incrow"><span class="small" style="color:var(--text-2);font-weight:600">Incentive MTD</span>
+        <span class="inc">${inr(Math.round(inc))}</span></div>
+    </div>`;}).join('');
+  const rows=team.map(p=>{
+    const {tgt,mtd,pct,slab,inc}=calc(p);
+    return `<div class="ttrow">
+      <div><div style="font-weight:800">${esc(p.full_name)}</div><div class="small muted">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}</div></div>
+      <span class="tnum">${tgt?inr(tgt.target_amount):'—'}</span>
+      <span class="tnum" style="font-weight:800">${inr(mtd)}</span>
+      <div><div class="pbar" style="margin-top:0"><div style="width:0%" data-w="${pct}"></div></div><span class="small muted">${pct}%</span></div>
+      <span class="small">${slab?esc(slab.label):'below ₹5L'}</span>
+      <span class="tnum" style="font-weight:800;color:var(--brand-dark)">${inr(Math.round(inc))}</span>
+    </div>`;}).join('');
+  return `<div class="pagehead"><div><h2>Team &amp; Incentives</h2><div class="sub">Month-to-date actuals vs slab targets — visible daily, not just month-end</div></div></div>
+  <div class="only-mobile"><div class="dashgrid" style="grid-template-columns:1fr">${cards||'<div class="card"><div class="empty">No team members visible</div></div>'}</div>${slabsCard}</div>
+  <div class="only-desktop"><div class="card teamtable">
+    <div class="tthead"><span>Member</span><span>Target (month)</span><span>Booked MTD</span><span>Progress</span><span>Slab</span><span>Incentive MTD</span></div>
+    ${rows||'<div class="empty">No team members visible</div>'}
+  </div>${slabsCard}</div>`;
 }
 
 /* ---------- view bindings ---------- */
@@ -442,21 +660,24 @@ function bindView(){
   $('#segpick')&&$('#segpick').querySelectorAll('button').forEach(b=>b.onclick=()=>{pipeSeg=b.dataset.s;render();});
   document.querySelectorAll('.kcard').forEach(c=>{
     c.onclick=e=>{
-      if(e.target.dataset.mv!==undefined&&e.target.dataset.mv!==''){moveStage(c.dataset.deal,+e.target.dataset.mv);return;}
+      const mv=e.target.closest('[data-mv]');
+      if(mv){moveStage(c.dataset.deal,+mv.dataset.mv);return;}
       if(me.role==='admin_entry')return;
       const d=cache.deals.find(x=>x.id===c.dataset.deal); if(d)dealModal(d);
     };});
   $('#adddealer')&&($('#adddealer').onclick=()=>dealerModal(null));
   document.querySelectorAll('[data-editdealer]').forEach(b=>b.onclick=()=>{const d=cache.dealers.find(x=>x.id===b.dataset.editdealer);dealerModal(d);});
   document.querySelectorAll('[data-hist]').forEach(b=>b.onclick=()=>toggleHist(b.dataset.hist));
-  $('#dq')&&($('#dq').oninput=()=>{window._dq=$('#dq').value;clearTimeout(window._dqh);window._dqh=setTimeout(render,250);});
+  $('#dq')&&($('#dq').oninput=()=>{window._dq=$('#dq').value;clearTimeout(window._dqh);window._dqh=setTimeout(()=>{render();const q=$('#dq');q&&(q.focus(),q.setSelectionRange(q.value.length,q.value.length));},300);});
   $('#showrm')&&($('#showrm').onchange=()=>{showRemoved=$('#showrm').checked;render();});
   $('#checkin')&&($('#checkin').onclick=checkin);
   $('#logvisit')&&($('#logvisit').onclick=visitModal);
   $('#addtask')&&($('#addtask').onclick=taskModal);
   document.querySelectorAll('[data-done]').forEach(b=>b.onclick=async()=>{
     const {error}=await db.from('activities').update({done:true}).eq('id',b.dataset.done);
-    error?fail(error):(toast('Done ✔'),refresh());});
+    error?fail(error):(toast('Done ✓'),refresh());});
+  // checked-in state class
+  const ci=$('#checkin'); if(ci&&ci.textContent.includes('Checked in'))ci.classList.add('done');
 }
 
 async function moveStage(id,dir){
@@ -464,7 +685,10 @@ async function moveStage(id,dir){
   const i=STAGES.indexOf(d.stage)+dir;
   if(i<0||i>=STAGES.length)return;
   const {error}=await db.from('deals').update({stage:STAGES[i]}).eq('id',id);
-  error?fail(error):(toast(`Moved to ${STAGE_LABEL[STAGES[i]]}`),refresh());
+  if(error)return fail(error);
+  if(STAGES[i]==='won')toast('Deal marked as Won 🎉','win');
+  else toast(`Moved to ${STAGE_LABEL[STAGES[i]]}`);
+  refresh();
 }
 async function toggleHist(id){
   const tr=$('#hist-'+id);tr.hidden=!tr.hidden;
@@ -474,7 +698,7 @@ async function toggleHist(id){
   $('#histbody-'+id).innerHTML=data.length?data.map(a=>{
     let extra='';
     if(a.action==='reassigned'&&a.detail?.from)extra=` — ${esc(a.detail.from.state||'')}${a.detail.from.district?'/'+esc(a.detail.from.district):''} → ${esc(a.detail.to.state||'')}${a.detail.to.district?'/'+esc(a.detail.to.district):''}`;
-    return `<div><b>${a.action}</b>${extra} · ${esc(nameOf(a.actor))} · ${new Date(a.at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`;
+    return `<div class="arow"><span style="font-weight:600">${a.action}${extra}</span><span class="muted" style="flex-shrink:0">${esc(nameOf(a.actor))} · ${new Date(a.at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></div>`;
   }).join(''):'No history';
 }
 
@@ -493,33 +717,39 @@ function dealModal(d){
     :`<option selected>${me.state}</option>`;
   const ownerOpts=cache.profiles.filter(p=>p.status==='active'&&['rsm','asm','ceo','coo','sales_head'].includes(p.role)).map(p=>`<option value="${p.id}" ${(d.owner||me.id)===p.id?'selected':''}>${esc(p.full_name)}</option>`).join('');
   openModal(`<h3>${isNew?(lockedLead?'New lead':'New deal'):'Edit deal'}</h3><div class="small muted">${isNew?'':esc(STAGE_LABEL[d.stage])}</div>
-  <label>Opportunity / account *</label><input id="f_title" value="${esc(d.title||'')}" placeholder="e.g. Sunrise Electricals — 5KVA order">
+  <div class="msec"><div class="eyebrow">Deal details</div>
+  <label>Opportunity / account *<input id="f_title" value="${esc(d.title||'')}" placeholder="e.g. Sunrise Electricals — 5KVA order"></label>
   <div class="mrow">
-    <div><label>Dealer / distributor</label><select id="f_dealer">${dealerOpts}</select></div>
-    <div><label>Segment</label><select id="f_seg"><option value="b2c" ${d.segment!=='b2b'?'selected':''}>B2C</option><option value="b2b" ${d.segment==='b2b'?'selected':''}>B2B</option></select></div>
-    <div><label>Stage</label><select id="f_stage" ${lockedLead?'disabled':''}>${STAGES.map(s=>`<option value="${s}" ${(d.stage||'lead')===s?'selected':''}>${STAGE_LABEL[s]}</option>`).join('')}</select></div>
-    <div><label>Deal size (₹)</label><input id="f_size" type="number" min="0" value="${d.deal_size??''}"></div>
-    <div><label>Product</label><select id="f_prod">${prodOpts}</select></div>
-    <div><label>Expected close</label><input id="f_close" type="date" value="${d.expected_close||''}"></div>
-    <div><label>State</label><select id="f_state" ${isLeader()||me.role==='admin_entry'?'':'disabled'}>${stateOpts}</select></div>
-    <div><label>District</label>${me.role==='asm'?`<select id="f_dist">${(me.districts||[]).map(x=>`<option ${d.district===x?'selected':''}>${x}</option>`).join('')}</select>`:`<input id="f_dist" value="${esc(d.district||'')}" placeholder="optional">`}</div>
-    <div><label>Owner</label><select id="f_owner" ${isLeader()?'':'disabled'}>${ownerOpts}</select></div>
-    <div><label>Quote sent?</label><select id="f_qs"><option value="false" ${!d.quote_sent?'selected':''}>No</option><option value="true" ${d.quote_sent?'selected':''}>Yes</option></select></div>
-    <div><label>Quote date</label><input id="f_qd" type="date" value="${d.quote_date||''}"></div>
-    <div><label>Quote amount (₹)</label><input id="f_qa" type="number" min="0" value="${d.quote_amount??''}"></div>
-    <div><label>Order confirmed</label><input id="f_oc" type="date" value="${d.order_confirmed_date||''}"></div>
-    <div><label>Delivery expected</label><input id="f_dex" type="date" value="${d.delivery_expected||''}"></div>
-    <div><label>Delivery actual</label><input id="f_dac" type="date" value="${d.delivery_actual||''}"></div>
+    <label>Dealer / distributor<select id="f_dealer">${dealerOpts}</select></label>
+    <label>Segment<select id="f_seg"><option value="b2c" ${d.segment!=='b2b'?'selected':''}>B2C</option><option value="b2b" ${d.segment==='b2b'?'selected':''}>B2B</option></select></label>
+    <label>Stage<select id="f_stage" ${lockedLead?'disabled':''}>${STAGES.map(s=>`<option value="${s}" ${(d.stage||'lead')===s?'selected':''}>${STAGE_LABEL[s]}</option>`).join('')}</select></label>
+    <label>Deal size (₹)<input id="f_size" type="number" min="0" value="${d.deal_size??''}"></label>
+    <label>Product<select id="f_prod">${prodOpts}</select></label>
+    <label>Expected close<input id="f_close" type="date" value="${d.expected_close||''}"></label>
+    <label>State<select id="f_state" ${isLeader()||me.role==='admin_entry'?'':'disabled'}>${stateOpts}</select></label>
+    <label>District${me.role==='asm'?`<select id="f_dist">${(me.districts||[]).map(x=>`<option ${d.district===x?'selected':''}>${x}</option>`).join('')}</select>`:`<input id="f_dist" value="${esc(d.district||'')}" placeholder="optional">`}</label>
+  </div></div>
+  <div class="msec"><div class="eyebrow">Quote &amp; order <span class="hint" style="text-transform:none;letter-spacing:0">— log only, no documents in Phase 1</span></div>
+  <div class="mrow">
+    <label>Quote sent?<select id="f_qs"><option value="false" ${!d.quote_sent?'selected':''}>No</option><option value="true" ${d.quote_sent?'selected':''}>Yes</option></select></label>
+    <label>Quote date<input id="f_qd" type="date" value="${d.quote_date||''}"></label>
+    <label>Quote amount (₹)<input id="f_qa" type="number" min="0" value="${d.quote_amount??''}"></label>
+    <label>Order confirmed<input id="f_oc" type="date" value="${d.order_confirmed_date||''}"></label>
+    <label>Delivery expected<input id="f_dex" type="date" value="${d.delivery_expected||''}"></label>
+    <label>Delivery actual<input id="f_dac" type="date" value="${d.delivery_actual||''}"></label>
+  </div></div>
+  <div class="msec"><div class="eyebrow">Owner &amp; notes</div>
+  <label>Owner<select id="f_owner" ${isLeader()?'':'disabled'}>${ownerOpts}</select></label>
+  <label>Next action<input id="f_na" value="${esc(d.next_action||'')}"></label>
+  <label>Remarks / challenges<textarea id="f_rm" rows="2">${esc(d.remarks||'')}</textarea></label>
   </div>
-  <label>Next action</label><input id="f_na" value="${esc(d.next_action||'')}">
-  <label>Remarks / challenges</label><textarea id="f_rm" rows="2">${esc(d.remarks||'')}</textarea>
   <div class="mfoot">${!isNew&&isLeader()?'<button class="btn btn-danger" id="f_del">Delete</button>':''}
     <span style="flex:1"></span>
-    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-plain" onclick="closeModal()">Cancel</button>
     <button class="btn btn-primary" id="f_save">${isNew?'Create':'Save'}</button></div>`);
   $('#f_save').onclick=async()=>{
     const v=x=>$(x).value||null;
-    if(!v('#f_title'))return toast('Title is required');
+    if(!v('#f_title'))return toast('Title is required','err');
     const payload={title:v('#f_title'),dealer_id:v('#f_dealer'),segment:$('#f_seg').value,
       stage:lockedLead?'lead':$('#f_stage').value,deal_size:v('#f_size'),product_id:v('#f_prod'),
       expected_close:v('#f_close'),state:(isLeader()||me.role==='admin_entry')?(v('#f_state')||null):me.state,
@@ -530,7 +760,10 @@ function dealModal(d){
     const q=isNew?db.from('deals').insert(payload):db.from('deals').update(payload).eq('id',d.id);
     const {error}=await q;
     if(error)return fail(error);
-    closeModal();toast(isNew?'Deal created':'Saved');refresh();
+    closeModal();
+    if(payload.stage==='won'&&d.stage!=='won')toast('Deal marked as Won 🎉','win');
+    else toast(isNew?'Deal created':'Saved');
+    refresh();
   };
   $('#f_del')&&($('#f_del').onclick=async()=>{
     if(!confirm('Delete this deal permanently?'))return;
@@ -541,33 +774,32 @@ function dealModal(d){
 
 function dealerModal(d){
   const isNew=!d;d=d||{};
-  const canMoveState=isLeader(); // cross-state reassignment = Sales Head approval; RSM blocked by RLS too
+  const canMoveState=isLeader(); // cross-state reassignment needs Sales Head — RLS blocks RSMs server-side too
   const stateOpts=STATES.map(s=>`<option ${(d.state||me.state)===s?'selected':''}>${s}</option>`).join('');
   const rsms=cache.profiles.filter(p=>p.role==='rsm'&&p.status==='active');
   const asms=cache.profiles.filter(p=>p.role==='asm'&&p.status==='active');
   openModal(`<h3>${isNew?'Add dealer / distributor':'Edit dealer'}</h3>
-  ${!isNew&&!canMoveState?'<div class="small muted">Moving a dealer to another state needs Sales Head approval.</div>':''}
-  <label>Name *</label><input id="g_name" value="${esc(d.name||'')}">
+  <label>Dealer name *<input id="g_name" value="${esc(d.name||'')}"></label>
   <div class="mrow">
-    <div><label>Type</label><select id="g_type"><option value="dealer" ${d.type!=='distributor'?'selected':''}>Dealer</option><option value="distributor" ${d.type==='distributor'?'selected':''}>Distributor</option></select></div>
-    <div><label>Status</label><select id="g_status"><option value="active" ${d.status!=='removed'?'selected':''}>Active</option><option value="removed" ${d.status==='removed'?'selected':''}>Removed</option></select></div>
-    <div><label>State</label><select id="g_state" ${canMoveState||(isNew&&me.role==='admin_entry')?'':'disabled'}>${me.role==='admin_entry'&&isNew?STATES.map(s=>`<option ${(d.state)===s?'selected':''}>${s}</option>`).join(''):stateOpts}</select></div>
-    <div><label>District</label>${me.role==='asm'?`<select id="g_dist">${(me.districts||[]).map(x=>`<option ${d.district===x?'selected':''}>${x}</option>`).join('')}</select>`:`<input id="g_dist" value="${esc(d.district||'')}">`}</div>
-    <div><label>Contact person</label><input id="g_cp" value="${esc(d.contact_person||'')}"></div>
-    <div><label>Phone</label><input id="g_ph" value="${esc(d.phone||'')}"></div>
-    <div><label>Credit limit (₹) <span class="muted">placeholder</span></label><input id="g_cl" type="number" min="0" value="${d.credit_limit??''}"></div>
-    <div><label>Payment terms <span class="muted">placeholder</span></label><input id="g_pt" value="${esc(d.payment_terms||'')}"></div>
-    <div><label>Assigned RSM</label><select id="g_rsm"><option value="">—</option>${rsms.map(p=>`<option value="${p.id}" ${(d.assigned_rsm||((me.role==='rsm')?me.id:''))===p.id?'selected':''}>${esc(p.full_name)} (${esc(p.state)})</option>`).join('')}</select></div>
-    <div><label>Assigned ASM</label><select id="g_asm"><option value="">—</option>${asms.map(p=>`<option value="${p.id}" ${(d.assigned_asm||((me.role==='asm')?me.id:''))===p.id?'selected':''}>${esc(p.full_name)} (${esc(p.state)})</option>`).join('')}</select></div>
+    <label>Type<select id="g_type"><option value="dealer" ${d.type!=='distributor'?'selected':''}>Dealer</option><option value="distributor" ${d.type==='distributor'?'selected':''}>Distributor</option></select></label>
+    <label>Status<select id="g_status"><option value="active" ${d.status!=='removed'?'selected':''}>Active</option><option value="removed" ${d.status==='removed'?'selected':''}>Removed</option></select></label>
+    <label>State ${canMoveState||(isNew&&me.role==='admin_entry')?'':'<span class="hint">— leadership-only</span>'}<select id="g_state" ${canMoveState||(isNew&&me.role==='admin_entry')?'':'disabled'}>${me.role==='admin_entry'&&isNew?STATES.map(s=>`<option ${(d.state)===s?'selected':''}>${s}</option>`).join(''):stateOpts}</select></label>
+    <label>District${me.role==='asm'?`<select id="g_dist">${(me.districts||[]).map(x=>`<option ${d.district===x?'selected':''}>${x}</option>`).join('')}</select>`:`<input id="g_dist" value="${esc(d.district||'')}">`}</label>
+    <label>Contact person<input id="g_cp" value="${esc(d.contact_person||'')}"></label>
+    <label>Phone<input id="g_ph" value="${esc(d.phone||'')}"></label>
+    <label>Credit limit (₹) <span class="hint">(placeholder)</span><input id="g_cl" type="number" min="0" value="${d.credit_limit??''}"></label>
+    <label>Payment terms <span class="hint">(placeholder)</span><input id="g_pt" value="${esc(d.payment_terms||'')}"></label>
+    <label>Assigned RSM<select id="g_rsm"><option value="">—</option>${rsms.map(p=>`<option value="${p.id}" ${(d.assigned_rsm||((me.role==='rsm')?me.id:''))===p.id?'selected':''}>${esc(p.full_name)} (${esc(p.state)})</option>`).join('')}</select></label>
+    <label>Assigned ASM<select id="g_asm"><option value="">—</option>${asms.map(p=>`<option value="${p.id}" ${(d.assigned_asm||((me.role==='asm')?me.id:''))===p.id?'selected':''}>${esc(p.full_name)} (${esc(p.state)})</option>`).join('')}</select></label>
   </div>
   <div class="mfoot">
     ${!isNew&&d.status==='active'?'<button class="btn btn-danger" id="g_rm">Remove</button>':''}
     <span style="flex:1"></span>
-    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-    <button class="btn btn-primary" id="g_save">${isNew?'Add':'Save'}</button></div>`);
+    <button class="btn btn-plain" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" id="g_save">${isNew?'Add dealer':'Save dealer'}</button></div>`);
   $('#g_save').onclick=async()=>{
     const v=x=>$(x).value||null;
-    if(!v('#g_name'))return toast('Name is required');
+    if(!v('#g_name'))return toast('Name is required','err');
     const payload={name:v('#g_name'),type:$('#g_type').value,status:$('#g_status').value,
       state:$('#g_state').value,district:v('#g_dist'),contact_person:v('#g_cp'),phone:v('#g_ph'),
       credit_limit:v('#g_cl'),payment_terms:v('#g_pt'),assigned_rsm:v('#g_rsm'),assigned_asm:v('#g_asm')};
@@ -585,16 +817,16 @@ function dealerModal(d){
 
 function taskModal(){
   openModal(`<h3>New task</h3>
-  <label>What *</label><input id="t_title" placeholder="e.g. Call Sunrise Electricals re: quote">
+  <label>What *<input id="t_title" placeholder="e.g. Call Sunrise Electricals re: quote"></label>
   <div class="mrow">
-    <div><label>Type</label><select id="t_type"><option value="task">Task</option><option value="call">Call</option><option value="visit">Visit</option></select></div>
-    <div><label>Due date</label><input id="t_due" type="date" value="${todayISO()}"></div>
+    <label>Type<select id="t_type"><option value="task">Task</option><option value="call">Call</option><option value="visit">Visit</option></select></label>
+    <label>Due date<input id="t_due" type="date" value="${todayISO()}"></label>
   </div>
-  <label>Dealer (optional)</label><select id="t_dealer"><option value="">—</option>${cache.dealers.filter(x=>x.status==='active').map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select>
-  <div class="mfoot"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+  <label>Dealer (optional)<select id="t_dealer"><option value="">—</option>${cache.dealers.filter(x=>x.status==='active').map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></label>
+  <div class="mfoot"><button class="btn btn-plain" onclick="closeModal()">Cancel</button>
   <button class="btn btn-primary" id="t_save">Add</button></div>`);
   $('#t_save').onclick=async()=>{
-    if(!$('#t_title').value)return toast('Title is required');
+    if(!$('#t_title').value)return toast('Title is required','err');
     const {error}=await db.from('activities').insert({type:$('#t_type').value,title:$('#t_title').value,
       due_date:$('#t_due').value||null,dealer_id:$('#t_dealer').value||null,user_id:me.id});
     if(error)return fail(error);
@@ -603,15 +835,15 @@ function taskModal(){
 
 function visitModal(){
   openModal(`<h3>Log a visit</h3><div class="small muted">Quick field entry — same record as Pipeline, abbreviated</div>
-  <label>Dealer *</label><select id="v_dealer"><option value="">— choose —</option>${cache.dealers.filter(x=>x.status==='active').map(x=>`<option value="${x.id}">${esc(x.name)}${x.district?' ('+esc(x.district)+')':''}</option>`).join('')}</select>
-  <label>Visit notes *</label><textarea id="v_notes" rows="3" placeholder="Who you met, what was discussed, stock situation…"></textarea>
-  <label>Linked deal (optional)</label><select id="v_deal"><option value="">—</option>${cache.deals.filter(d=>!['won','lost'].includes(d.stage)).map(d=>`<option value="${d.id}">${esc(d.title)}</option>`).join('')}</select>
-  <label>Next action for that deal</label><input id="v_na" placeholder="e.g. Send revised quote by Friday">
-  <div class="mfoot"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+  <label>Dealer *<select id="v_dealer"><option value="">— choose —</option>${cache.dealers.filter(x=>x.status==='active').map(x=>`<option value="${x.id}">${esc(x.name)}${x.district?' ('+esc(x.district)+')':''}</option>`).join('')}</select></label>
+  <label>Visit notes *<textarea id="v_notes" rows="3" placeholder="Who you met, what was discussed, stock situation…"></textarea></label>
+  <label>Linked deal (optional)<select id="v_deal"><option value="">—</option>${cache.deals.filter(d=>!['won','lost'].includes(d.stage)).map(d=>`<option value="${d.id}">${esc(d.title)}</option>`).join('')}</select></label>
+  <label>Next action for that deal<input id="v_na" placeholder="e.g. Send revised quote by Friday"></label>
+  <div class="mfoot"><button class="btn btn-plain" onclick="closeModal()">Cancel</button>
   <button class="btn btn-primary" id="v_save">Log visit</button></div>`);
   $('#v_save').onclick=async()=>{
-    if(!$('#v_dealer').value)return toast('Pick the dealer you visited');
-    if(!$('#v_notes').value)return toast('Add a short note');
+    if(!$('#v_dealer').value)return toast('Pick the dealer you visited','err');
+    if(!$('#v_notes').value)return toast('Add a short note','err');
     const {error}=await db.from('activities').insert({type:'visit',title:'Visit logged',done:true,
       dealer_id:$('#v_dealer').value,notes:$('#v_notes').value,user_id:me.id,due_date:todayISO()});
     if(error)return fail(error);
@@ -619,18 +851,19 @@ function visitModal(){
       const {error:e2}=await db.from('deals').update({next_action:$('#v_na').value}).eq('id',$('#v_deal').value);
       if(e2)fail(e2);
     }
-    closeModal();toast('Visit logged ✔');refresh();};
+    closeModal();toast('Visit logged ✓');refresh();};
 }
 
 function checkin(){
-  if(!navigator.geolocation)return toast('Location not available on this device');
+  if($('#checkin').classList.contains('done'))return;
+  if(!navigator.geolocation)return toast('Location not available on this device','err');
   toast('Getting your location…');
   navigator.geolocation.getCurrentPosition(async pos=>{
     const {error}=await db.from('activities').insert({type:'check_in',title:'Check-in',done:true,user_id:me.id,
       gps_lat:pos.coords.latitude,gps_lng:pos.coords.longitude,due_date:todayISO(),
       notes:`±${Math.round(pos.coords.accuracy)}m`});
-    error?fail(error):(toast('Checked in ✔'),refresh());
-  },err=>toast('Could not get location: '+err.message),{enableHighAccuracy:true,timeout:12000});
+    error?fail(error):(toast('Checked in ✓','win'),refresh());
+  },err=>toast('Could not get location: '+err.message,'err'),{enableHighAccuracy:true,timeout:12000});
 }
 
 /* ---------- start ---------- */
