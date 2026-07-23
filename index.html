@@ -159,6 +159,15 @@ main{max-width:1280px;margin:0 auto;padding:18px;padding-bottom:96px}
 .d-a{background:var(--amber);box-shadow:0 0 0 4px rgba(232,163,61,.13)}
 .d-r{background:var(--red);box-shadow:0 0 0 4px rgba(214,69,65,.13)}
 
+.fsrow{cursor:pointer}
+.fsrow .chev{color:var(--text-3);font-size:11px;transition:transform .16s ease}
+.fsrow.open .chev{transform:rotate(180deg)}
+.maplink{display:inline-block;font-size:11.5px;font-weight:700;color:var(--brand-dark);background:rgba(140,198,63,.14);
+  padding:3px 8px;border-radius:var(--pill);text-decoration:none;margin:2px 3px 2px 0;font-variant-numeric:tabular-nums}
+.maplink:hover{background:rgba(140,198,63,.28);color:var(--brand-dark)}
+.citime{display:inline-block;font-size:11.5px;font-weight:700;color:var(--text-2);background:var(--sunken);
+  padding:3px 8px;border-radius:var(--pill);margin:2px 3px 2px 0;font-variant-numeric:tabular-nums}
+
 /* ---------- pipeline ---------- */
 .seg{display:inline-flex;background:var(--sunken);border-radius:9px;padding:3px;gap:2px}
 .seg button{padding:7px 12px;border-radius:7px;font-size:12.5px;font-weight:700;color:var(--text-2)}
@@ -347,6 +356,21 @@ const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMo
 const monthStartISO=()=>todayISO().slice(0,8)+'01';
 function weekStart(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);d.setHours(0,0,0,0);return d;}
 const isLeader=()=>LEADERS.includes(me.role);
+const tstr=ts=>new Date(ts).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+const mapsUrl=a=>`https://www.google.com/maps?q=${a.gps_lat},${a.gps_lng}`;
+function ciTrail(uid){
+  const cis=cache.activities.filter(a=>a.user_id===uid&&a.type==='check_in')
+    .sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  if(!cis.length)return '<div class="small muted" style="padding:4px 0">No GPS check-ins in the last 14 days</div>';
+  const byDay={};
+  cis.forEach(a=>{const d=a.created_at.slice(0,10);(byDay[d]=byDay[d]||[]).push(a);});
+  return Object.entries(byDay).slice(0,7).map(([d,list])=>{
+    const chips=list.sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(a=>
+      a.gps_lat!=null?`<a class="maplink" href="${mapsUrl(a)}" target="_blank" rel="noopener">📍 ${tstr(a.created_at)}</a>`
+      :`<span class="citime">${tstr(a.created_at)}</span>`).join('');
+    return `<div style="padding:5px 0"><div class="small" style="font-weight:800;margin-bottom:2px">${d===todayISO()?'Today':dstr(d)} · ${list.length} check-in${list.length>1?'s':''}</div><div>${chips}</div></div>`;
+  }).join('');
+}
 const isField=()=>['rsm','asm','sales_executive'].includes(me.role);
 const nameOf=id=>{const p=cache.profiles.find(p=>p.id===id);return p?p.full_name:'—';};
 function toast(m,kind){const t=$('#toast');t.textContent=m;t.className='show'+(kind?' '+kind:'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='',2600);}
@@ -462,10 +486,12 @@ function rDash(){
     const last=acts.length?acts[0].created_at.slice(0,10):null;
     const cls=last===t0?'d-g':last===y0?'d-a':'d-r';
     const lbl=last===t0?'Updated today':last===y0?'Updated yesterday':last?('Last update '+dstr(last)):'No updates yet';
-    return `<div class="row"><span class="dot ${cls}"></span>
+    return `<div class="row fsrow" data-fs="${p.id}"><span class="dot ${cls}"></span>
       <div style="flex:1"><div style="font-size:14px;font-weight:700">${esc(p.full_name)}</div>
       <div class="small muted">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}</div></div>
-      <span class="small" style="color:var(--text-2);font-weight:600;flex-shrink:0">${lbl}</span></div>`;}).join('');
+      <span class="small" style="color:var(--text-2);font-weight:600;flex-shrink:0">${lbl}</span>
+      <span class="chev">▼</span></div>
+      <div id="fs-${p.id}" hidden><div class="audit" style="margin-bottom:8px">${ciTrail(p.id)}</div></div>`;}).join('');
 
   return `<div class="pagehead"><div><h2>Dashboard</h2><div class="sub">${isLeader()?(stateFilter?(stateFilter==='__hq__'?'HQ / national view':stateFilter):'All 5 states'):(me.state||'')}${me.districts?.length?' · '+me.districts.join(', '):''}</div></div></div>
   <div class="kpis">
@@ -497,6 +523,7 @@ function rDash(){
       :'<div class="empty">Nothing due in the next 7 days</div>'}
     </div>
     <div class="card"><h3>Field update status</h3>
+      <div class="small muted" style="margin-bottom:4px">Tap a person to see their GPS check-in trail — each pin opens in Google Maps</div>
       ${rows||'<div class="empty">No RSM/ASM visible</div>'}
     </div>
   </div>`;
@@ -549,15 +576,16 @@ function rMyDay(){
                   .sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||''));
   const upcoming=mine.filter(a=>['task','call','visit'].includes(a.type)&&!a.done&&(!a.due_date||a.due_date>t0)).slice(0,10);
   const todayLog=mine.filter(a=>a.created_at.slice(0,10)===t0&&(a.type==='check_in'||a.type==='visit'||a.done));
-  const ci=mine.find(a=>a.type==='check_in'&&a.created_at.slice(0,10)===t0);
+  const cis=mine.filter(a=>a.type==='check_in'&&a.created_at.slice(0,10)===t0).sort((a,b)=>a.created_at.localeCompare(b.created_at));
+  const ci=cis[cis.length-1];
   const li=(a,done)=>`<div class="row">
       <span class="tick ${done?'done':''}">${done?'✓':''}</span>
       <div style="flex:1"><div style="font-size:14px;font-weight:700">${esc(a.title||a.type)}</div>
-      <div class="small muted">${a.dealer_id?esc((cache.dealers.find(d=>d.id===a.dealer_id)||{}).name||''):''}${a.due_date?' · due '+dstr(a.due_date):''}${a.notes?' · '+esc(a.notes):''}</div></div>
+      <div class="small muted">${a.type==='check_in'?tstr(a.created_at)+(a.gps_lat!=null?` · <a href="${mapsUrl(a)}" target="_blank" rel="noopener">map ↗</a>`:''):''}${a.dealer_id?esc((cache.dealers.find(d=>d.id===a.dealer_id)||{}).name||''):''}${a.due_date&&a.type!=='check_in'?' · due '+dstr(a.due_date):''}${a.notes&&a.type!=='check_in'?' · '+esc(a.notes):''}</div></div>
       ${!a.done?`<button class="btn btn-ghost btn-sm" data-done="${a.id}" style="background:var(--sunken)">Done</button>`:'<span class="donepill">done</span>'}</div>`;
   return `<div class="pagehead"><div><h2>My Day</h2><div class="sub">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div></div></div>
   <div class="actions" style="margin-bottom:14px">
-    <button class="btn btn-ghost${ci?' done':''}" id="checkin">${ci?`<span class="dot"></span>✓ Checked in ${new Date(ci.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`:'📍 Check in'}</button>
+    <button class="btn btn-ghost${ci?' done':''}" id="checkin">${ci?`<span class="dot"></span>✓ Checked in ${tstr(ci.created_at)}${cis.length>1?' ×'+cis.length:''} · again?`:'📍 Check in'}</button>
     <button class="btn btn-primary" id="logvisit">+ Log a visit</button>
     <button class="btn btn-ghost" id="addtask">+ Task</button>
   </div>
@@ -676,6 +704,10 @@ function bindView(){
   document.querySelectorAll('[data-done]').forEach(b=>b.onclick=async()=>{
     const {error}=await db.from('activities').update({done:true}).eq('id',b.dataset.done);
     error?fail(error):(toast('Done ✓'),refresh());});
+  document.querySelectorAll('[data-fs]').forEach(r=>r.onclick=()=>{
+    const x=document.getElementById('fs-'+r.dataset.fs);
+    if(x){x.hidden=!x.hidden;r.classList.toggle('open',!x.hidden);}
+  });
   // checked-in state class
   const ci=$('#checkin'); if(ci&&ci.textContent.includes('Checked in'))ci.classList.add('done');
 }
@@ -855,7 +887,6 @@ function visitModal(){
 }
 
 function checkin(){
-  if($('#checkin').classList.contains('done'))return;
   if(!navigator.geolocation)return toast('Location not available on this device','err');
   toast('Getting your location…');
   navigator.geolocation.getCurrentPosition(async pos=>{
