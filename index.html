@@ -257,6 +257,16 @@ main{max-width:1280px;margin:0 auto;padding:18px;padding-bottom:96px}
 .only-mobile{display:block}.only-desktop{display:none}
 @media(min-width:900px){.only-mobile{display:none}.only-desktop{display:block}}
 
+.avatar{border-radius:50%;object-fit:cover;background:var(--sunken);color:var(--brand-dark);font-weight:800;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:1.5px solid var(--border);overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+#whoami{cursor:pointer;border-radius:10px;padding:4px 8px;margin:-4px 0}
+#whoami:hover{background:var(--sunken)}
+.hme{display:flex;align-items:center;gap:8px}
+.statuschip{font-size:10px;font-weight:800;letter-spacing:.04em;padding:3px 8px;border-radius:var(--pill)}
+.statuschip.active{background:rgba(140,198,63,.16);color:var(--brand-dark)}
+.statuschip.inactive{background:rgba(214,69,65,.14);color:var(--red)}
+
 /* ---------- modal / toast ---------- */
 #modalroot{position:fixed;inset:0;z-index:100;display:none;align-items:flex-end;justify-content:center;background:rgba(24,23,15,.5)}
 @media(min-width:600px){#modalroot{align-items:center;padding:24px}}
@@ -310,7 +320,7 @@ main{max-width:1280px;margin:0 auto;padding:18px;padding-bottom:96px}
       <span class="chip chip-brand">CRM</span>
       <div class="hspace"></div>
       <select id="statepick" hidden></select>
-      <div id="whoami"><div class="n"></div><div class="r"></div></div>
+      <div id="whoami" title="My profile"><div class="hme"><span id="hava"></span><div><div class="n"></div><div class="r"></div></div></div></div>
       <button id="logout">Sign out</button>
     </div>
     <nav><div class="nwrap" id="navtabs"></div></nav>
@@ -341,7 +351,8 @@ const NAV_ICONS = {
   pipeline:'<svg viewBox="0 0 18 18"><rect x="2" y="8" width="3" height="8" fill="currentColor"/><rect x="7.5" y="4" width="3" height="12" fill="currentColor"/><rect x="13" y="1" width="3" height="15" fill="currentColor"/></svg>',
   myday:'<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="2"/><line x1="9" y1="9" x2="9" y2="5" stroke="currentColor" stroke-width="2"/><line x1="9" y1="9" x2="12" y2="10" stroke="currentColor" stroke-width="2"/></svg>',
   dealers:'<svg viewBox="0 0 18 18"><rect x="2" y="6" width="14" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2 6 L4.5 2.5 H13.5 L16 6" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
-  team:'<svg viewBox="0 0 18 18"><circle cx="6.5" cy="7" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="8.5" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M1.5 15.5 C2.5 12.5 5 11.5 6.5 11.5 C8 11.5 10.5 12.5 11.5 15.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
+  team:'<svg viewBox="0 0 18 18"><circle cx="6.5" cy="7" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="8.5" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M1.5 15.5 C2.5 12.5 5 11.5 6.5 11.5 C8 11.5 10.5 12.5 11.5 15.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  admin:'<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="2.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 1.5 v2.4 M9 14.1 v2.4 M1.5 9 h2.4 M14.1 9 h2.4 M3.7 3.7 l1.7 1.7 M12.6 12.6 l1.7 1.7 M14.3 3.7 l-1.7 1.7 M5.4 12.6 l-1.7 1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
 };
 
 let me=null, cache={profiles:[],dealers:[],deals:[],products:[],slabs:[],targets:[],activities:[]};
@@ -357,6 +368,8 @@ const monthStartISO=()=>todayISO().slice(0,8)+'01';
 function weekStart(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);d.setHours(0,0,0,0);return d;}
 const isLeader=()=>LEADERS.includes(me.role);
 const tstr=ts=>new Date(ts).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+const initials=n=>(n||'?').split(/\s+/).map(w=>w[0]).filter(Boolean).slice(0,2).join('').toUpperCase();
+const avatarHtml=(p,size)=>`<span class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.38)}px">${p&&p.avatar_url?`<img src="${esc(p.avatar_url)}" alt="">`:initials(p&&p.full_name)}</span>`;
 const mapsUrl=a=>`https://www.google.com/maps?q=${a.gps_lat},${a.gps_lng}`;
 function ciTrail(uid){
   const cis=cache.activities.filter(a=>a.user_id===uid&&a.type==='check_in')
@@ -397,6 +410,8 @@ async function boot(){
   $('#login').style.display='none';$('#app').style.display='block';
   $('#whoami .n').textContent=me.full_name;
   $('#whoami .r').textContent=ROLE_LABEL[me.role]+(me.state?' · '+me.state:'');
+  $('#hava').innerHTML=avatarHtml(me,30);
+  $('#whoami').onclick=profileModal;
   const sp=$('#statepick');
   if(isLeader()||me.role==='admin_entry'){
     sp.hidden=false;
@@ -409,10 +424,11 @@ async function boot(){
 }
 
 function buildNav(){
-  const tabs=[['dash','Dashboard'],['pipeline','Pipeline'],['myday','My Day'],['dealers','Dealers'],['team','Team']];
+  const tabs=[['dash','Dashboard'],['pipeline','Pipeline'],['myday','My Day'],['dealers','Dealers'],['team','Team'],['admin','Admin']];
   $('#navtabs').innerHTML=tabs.filter(([k])=>{
     if(k==='myday'&&!isField())return false;
     if(k==='team'&&me.role==='admin_entry')return false;
+    if(k==='admin'&&!isLeader())return false;
     return true;
   }).map(([k,l])=>`<button data-v="${k}" class="${k===curView?'on':''}">${NAV_ICONS[k]}<span>${l}</span></button>`).join('');
   $('#navtabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{curView=b.dataset.v;render();});
@@ -448,6 +464,7 @@ function render(){
   else if(curView==='myday')html=rMyDay();
   else if(curView==='dealers')html=rDealers();
   else if(curView==='team')html=rTeam();
+  else if(curView==='admin')html=rAdmin();
   v.innerHTML=`<div class="viewwrap">${html}</div>`;
   bindView();
   requestAnimationFrame(animateIn);
@@ -486,7 +503,7 @@ function rDash(){
     const last=acts.length?acts[0].created_at.slice(0,10):null;
     const cls=last===t0?'d-g':last===y0?'d-a':'d-r';
     const lbl=last===t0?'Updated today':last===y0?'Updated yesterday':last?('Last update '+dstr(last)):'No updates yet';
-    return `<div class="row fsrow" data-fs="${p.id}"><span class="dot ${cls}"></span>
+    return `<div class="row fsrow" data-fs="${p.id}"><span class="dot ${cls}"></span>${avatarHtml(p,30)}
       <div style="flex:1"><div style="font-size:14px;font-weight:700">${esc(p.full_name)}</div>
       <div class="small muted">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}</div></div>
       <span class="small" style="color:var(--text-2);font-weight:600;flex-shrink:0">${lbl}</span>
@@ -656,8 +673,8 @@ function rTeam(){
   const cards=team.map(p=>{
     const {tgt,mtd,pct,slab,inc}=calc(p);
     return `<div class="card tcard lift">
-      <div class="toprow"><div><div class="nm">${esc(p.full_name)}</div>
-        <div class="small muted">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}</div></div>
+      <div class="toprow"><div style="display:flex;gap:10px;align-items:center">${avatarHtml(p,36)}<div><div class="nm">${esc(p.full_name)}</div>
+        <div class="small muted">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}</div></div></div>
         <span class="slabchip">${slab?esc(slab.label):'below ₹5L'}</span></div>
       <div class="nums"><span>Booked MTD <b>${inr(mtd)}</b></span><span>Target <b>${tgt?inr(tgt.target_amount):'—'}</b></span></div>
       <div class="pbar"><div style="width:0%" data-w="${pct}"></div></div>
@@ -667,7 +684,7 @@ function rTeam(){
   const rows=team.map(p=>{
     const {tgt,mtd,pct,slab,inc}=calc(p);
     return `<div class="ttrow">
-      <div><div style="font-weight:800">${esc(p.full_name)}</div><div class="small muted">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}</div></div>
+      <div style="display:flex;gap:10px;align-items:center">${avatarHtml(p,32)}<div><div style="font-weight:800">${esc(p.full_name)}</div><div class="small muted">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}</div></div></div>
       <span class="tnum">${tgt?inr(tgt.target_amount):'—'}</span>
       <span class="tnum" style="font-weight:800">${inr(mtd)}</span>
       <div><div class="pbar" style="margin-top:0"><div style="width:0%" data-w="${pct}"></div></div><span class="small muted">${pct}%</span></div>
@@ -680,6 +697,147 @@ function rTeam(){
     <div class="tthead"><span>Member</span><span>Target (month)</span><span>Booked MTD</span><span>Progress</span><span>Slab</span><span>Incentive MTD</span></div>
     ${rows||'<div class="empty">No team members visible</div>'}
   </div>${slabsCard}</div>`;
+}
+
+/* ===== Admin (leadership only) ===== */
+function rAdmin(){
+  const users=[...cache.profiles].sort((a,b)=>(a.status||'').localeCompare(b.status||'')||(a.role||'').localeCompare(b.role||'')||a.full_name.localeCompare(b.full_name));
+  return `<div class="pagehead"><div><h2>Admin — Team &amp; Access</h2><div class="sub">Create users, assign roles &amp; states, reset passwords, deactivate leavers</div></div>
+    <button class="btn btn-primary btn-sm" id="adduser">+ Add user</button></div>
+  <div class="dealerlist">
+    ${users.map(p=>`<div class="card dcard lift" ${p.status!=='active'?'style="opacity:.6"':''}>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="display:flex;gap:10px;align-items:center">${avatarHtml(p,38)}
+          <div><div class="nm">${esc(p.full_name)}</div>
+          <div class="small" style="color:var(--text-2)">${esc(p.email||'')}</div></div></div>
+        <span class="statuschip ${p.status==='active'?'active':'inactive'}">${p.status==='active'?'ACTIVE':'INACTIVE'}</span>
+      </div>
+      <div class="small" style="color:var(--text-2)">${ROLE_LABEL[p.role]}${p.state?' · '+esc(p.state):''}${p.districts?.length?' · '+esc(p.districts.join(', ')):''}</div>
+      <div class="actionsrow">
+        <button class="btn btn-ghost" data-edituser="${p.id}">Edit</button>
+        <button class="btn btn-ghost" style="background:var(--sunken)" data-resetpw="${p.id}">Reset password</button>
+        ${p.id!==me.id?`<button class="btn ${p.status==='active'?'btn-danger':'btn-ghost'}" data-togglestatus="${p.id}">${p.status==='active'?'Deactivate':'Reactivate'}</button>`:''}
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function userModal(p){
+  const isNew=!p;p=p||{};
+  const roleOpts=Object.entries(ROLE_LABEL).map(([k,l])=>`<option value="${k}" ${p.role===k?'selected':''}>${l}</option>`).join('');
+  const stateOpts='<option value="">— (all states / HQ)</option>'+STATES.map(st=>`<option ${p.state===st?'selected':''}>${st}</option>`).join('');
+  openModal(`<h3>${isNew?'Add user':'Edit user'}</h3>
+  ${isNew?'':'<div class="small muted">'+esc(p.email||'')+'</div>'}
+  <label>Full name *<input id="u_name" value="${esc(p.full_name||'')}"></label>
+  ${isNew?`<label>Email *<input id="u_email" type="email" placeholder="name@terranova.crm"></label>
+  <label>Temporary password * <span class="hint">(min 8 chars — they can change it in their profile)</span><input id="u_pass" value=""></label>`:''}
+  <div class="mrow">
+    <label>Role *<select id="u_role">${roleOpts}</select></label>
+    <label>Phone<input id="u_phone" value="${esc(p.phone||'')}"></label>
+    <label>State <span class="hint">(for RSM/ASM/SE)</span><select id="u_state">${stateOpts}</select></label>
+    <label>Districts <span class="hint">(ASM only, comma-separated)</span><input id="u_dist" value="${esc((p.districts||[]).join(', '))}"></label>
+  </div>
+  <div class="mfoot"><button class="btn btn-plain" onclick="closeModal()">Cancel</button>
+  <button class="btn btn-primary" id="u_save">${isNew?'Create user':'Save'}</button></div>`);
+  $('#u_save').onclick=async()=>{
+    const name=$('#u_name').value.trim();
+    if(!name)return toast('Name is required','err');
+    const districts=$('#u_dist').value.split(',').map(x=>x.trim()).filter(Boolean);
+    if(isNew){
+      const email=$('#u_email').value.trim(), pass=$('#u_pass').value;
+      if(!email)return toast('Email is required','err');
+      if((pass||'').length<8)return toast('Password must be at least 8 characters','err');
+      const {error}=await db.rpc('admin_create_user',{p_email:email,p_password:pass,p_full_name:name,
+        p_role:$('#u_role').value,p_state:$('#u_state').value||null,
+        p_districts:districts.length?districts:null,p_phone:$('#u_phone').value||null});
+      if(error)return fail(error);
+      closeModal();toast('User created ✓','win');refresh();
+    }else{
+      const {error}=await db.from('profiles').update({full_name:name,phone:$('#u_phone').value||null,
+        role:$('#u_role').value,state:$('#u_state').value||null,
+        districts:districts.length?districts:null}).eq('id',p.id);
+      if(error)return fail(error);
+      closeModal();toast('Saved');refresh();
+    }
+  };
+}
+
+function resetPwModal(p){
+  openModal(`<h3>Reset password</h3><div class="small muted">${esc(p.full_name)} · ${esc(p.email||'')}</div>
+  <label>New password * <span class="hint">(min 8 chars — share it with them securely)</span>
+    <input id="rp_pass" value=""></label>
+  <div class="mfoot"><button class="btn btn-plain" onclick="closeModal()">Cancel</button>
+  <button class="btn btn-primary" id="rp_save">Reset password</button></div>`);
+  $('#rp_save').onclick=async()=>{
+    const pw=$('#rp_pass').value;
+    if((pw||'').length<8)return toast('Password must be at least 8 characters','err');
+    const {error}=await db.rpc('admin_reset_password',{p_user:p.id,p_password:pw});
+    if(error)return fail(error);
+    closeModal();toast('Password reset ✓','win');
+  };
+}
+
+/* ===== My profile (all users) ===== */
+function profileModal(){
+  openModal(`<h3>My profile</h3><div class="small muted">${esc(me.email||'')} · ${ROLE_LABEL[me.role]}</div>
+  <div style="display:flex;align-items:center;gap:14px;margin-top:14px">
+    <span id="pv_ava">${avatarHtml(me,64)}</span>
+    <div><label style="margin-top:0">Profile photo
+      <input id="p_photo" type="file" accept="image/*" style="padding:8px"></label>
+    </div>
+  </div>
+  <label>Full name<input id="p_name" value="${esc(me.full_name||'')}"></label>
+  <label>Phone<input id="p_phone" value="${esc(me.phone||'')}"></label>
+  <div class="msec"><div class="eyebrow">Change password</div>
+    <div class="mrow">
+      <label>New password<input id="p_pw1" type="password" placeholder="min 8 characters"></label>
+      <label>Confirm<input id="p_pw2" type="password"></label>
+    </div>
+  </div>
+  <div class="mfoot"><button class="btn btn-plain" onclick="closeModal()">Cancel</button>
+  <button class="btn btn-primary" id="p_save">Save</button></div>`);
+  $('#p_save').onclick=async()=>{
+    try{
+      let avatar_url=me.avatar_url;
+      const f=$('#p_photo').files[0];
+      if(f){
+        const blob=await shrinkImage(f,256);
+        const path=me.id+'.jpg';
+        const {error:se}=await db.storage.from('avatars').upload(path,blob,{upsert:true,contentType:'image/jpeg'});
+        if(se)return fail(se);
+        avatar_url=db.storage.from('avatars').getPublicUrl(path).data.publicUrl+'?v='+Date.now();
+      }
+      const name=$('#p_name').value.trim();
+      if(!name)return toast('Name is required','err');
+      const {error}=await db.from('profiles').update({full_name:name,phone:$('#p_phone').value||null,avatar_url}).eq('id',me.id);
+      if(error)return fail(error);
+      const pw1=$('#p_pw1').value,pw2=$('#p_pw2').value;
+      if(pw1||pw2){
+        if(pw1!==pw2)return toast('Passwords do not match','err');
+        if(pw1.length<8)return toast('Password must be at least 8 characters','err');
+        const {error:pe}=await db.auth.updateUser({password:pw1});
+        if(pe)return fail(pe);
+      }
+      me={...me,full_name:name,phone:$('#p_phone').value||null,avatar_url};
+      $('#whoami .n').textContent=me.full_name;
+      $('#hava').innerHTML=avatarHtml(me,30);
+      closeModal();toast((pw1?'Profile & password updated ✓':'Profile updated ✓'),'win');refresh();
+    }catch(e){fail(e);}
+  };
+}
+function shrinkImage(file,max){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const sc=Math.min(1,max/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      c.toBlob(b=>b?res(b):rej(new Error('Could not process image')),'image/jpeg',.86);
+    };
+    img.onerror=()=>rej(new Error('Could not read image'));
+    img.src=URL.createObjectURL(file);
+  });
 }
 
 /* ---------- view bindings ---------- */
@@ -704,6 +862,16 @@ function bindView(){
   document.querySelectorAll('[data-done]').forEach(b=>b.onclick=async()=>{
     const {error}=await db.from('activities').update({done:true}).eq('id',b.dataset.done);
     error?fail(error):(toast('Done ✓'),refresh());});
+  $('#adduser')&&($('#adduser').onclick=()=>userModal(null));
+  document.querySelectorAll('[data-edituser]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.edituser);userModal(p);});
+  document.querySelectorAll('[data-resetpw]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.resetpw);resetPwModal(p);});
+  document.querySelectorAll('[data-togglestatus]').forEach(b=>b.onclick=async()=>{
+    const p=cache.profiles.find(x=>x.id===b.dataset.togglestatus);
+    const to=p.status==='active'?'inactive':'active';
+    if(!confirm((to==='inactive'?'Deactivate ':'Reactivate ')+p.full_name+'?'+(to==='inactive'?' They will lose access immediately.':'')))return;
+    const {error}=await db.from('profiles').update({status:to}).eq('id',p.id);
+    error?fail(error):(toast(to==='inactive'?'User deactivated':'User reactivated'),refresh());
+  });
   document.querySelectorAll('[data-fs]').forEach(r=>r.onclick=()=>{
     const x=document.getElementById('fs-'+r.dataset.fs);
     if(x){x.hidden=!x.hidden;r.classList.toggle('open',!x.hidden);}
