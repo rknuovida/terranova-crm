@@ -12,7 +12,9 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" type="image/png" href="./icon-64.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="stylesheet" href="./leaflet.css">
 <script src="./supabase.min.js"></script>
+<script src="./leaflet.js"></script>
 <style>
 /* ============ Terranova CRM — redesign tokens (per design handover) ============ */
 @font-face{
@@ -171,6 +173,25 @@ label .hint{font-weight:600;color:var(--text-3)}
 .kanban-area.kanban{display:block !important;overflow:visible;margin:0;padding:0;scroll-snap-type:none}
 .kanban-area .only-desktop .kanban{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;overflow:visible}
 @media(max-width:899px){.kanban-area .only-desktop{display:none}}
+
+/* ---------- v2: inline trail map ---------- */
+.trailmap{height:230px;border-radius:14px;overflow:hidden;margin:8px 0 4px;border:1px solid var(--border);background:var(--sunken)}
+.leaflet-container{font-family:var(--font)}
+.tpin{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;
+  background:linear-gradient(180deg,var(--brand),var(--brand-deep));color:#1E2A0E;font-weight:800;font-size:12px;
+  border:2.5px solid #fff;box-shadow:0 2px 8px rgba(34,31,28,.35)}
+.daychips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
+.daychips::-webkit-scrollbar{display:none}
+.dchip{flex-shrink:0;font-size:11.5px;font-weight:800;padding:5px 11px;border-radius:var(--pill);
+  background:var(--sunken);color:var(--text-2);border:1.5px solid transparent}
+.dchip.on{background:var(--charcoal);color:#fff}
+@media(prefers-color-scheme:dark){
+  .dchip.on{background:#F2F1EA;color:#161613}
+  .leaflet-tile{filter:brightness(.75) contrast(1.05) saturate(.85)}
+  .trailmap{border-color:#34332D}
+}
+.leaflet-popup-content{font-size:12.5px;font-weight:600;margin:9px 12px}
+.leaflet-popup-content a{font-weight:800}
 
 /* ---------- v2: skeleton loading ---------- */
 @keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
@@ -529,19 +550,46 @@ function animateNums(){
 }
 const avatarHtml=(p,size)=>`<span class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.38)}px">${p&&p.avatar_url?`<img src="${esc(p.avatar_url)}" alt="">`:initials(p&&p.full_name)}</span>`;
 const mapsUrl=a=>`https://www.google.com/maps?q=${a.gps_lat},${a.gps_lng}`;
-function ciTrail(uid){
-  const cis=cache.activities.filter(a=>a.user_id===uid&&a.type==='check_in')
-    .sort((a,b)=>b.created_at.localeCompare(a.created_at));
-  if(!cis.length)return '<div class="small muted" style="padding:4px 0">No GPS check-ins in the last 14 days</div>';
+function ciDays(uid){
   const byDay={};
-  cis.forEach(a=>{const d=a.created_at.slice(0,10);(byDay[d]=byDay[d]||[]).push(a);});
-  return Object.entries(byDay).slice(0,7).map(([d,list])=>{
-    const chips=list.sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(a=>
-      a.gps_lat!=null?`<a class="maplink" href="${mapsUrl(a)}" target="_blank" rel="noopener">📍 ${tstr(a.created_at)}</a>`
-      :`<span class="citime">${tstr(a.created_at)}</span>`).join('');
-    return `<div style="padding:5px 0"><div class="small" style="font-weight:800;margin-bottom:2px">${d===todayISO()?'Today':dstr(d)} · ${list.length} check-in${list.length>1?'s':''}</div><div>${chips}</div></div>`;
-  }).join('');
+  cache.activities.filter(a=>a.user_id===uid&&a.type==='check_in')
+    .forEach(a=>{const d=a.created_at.slice(0,10);(byDay[d]=byDay[d]||[]).push(a);});
+  return Object.entries(byDay).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,7);
 }
+function ciTrail(uid){
+  const days=ciDays(uid);
+  if(!days.length)return '<div class="small muted" style="padding:4px 0">No GPS check-ins in the last 14 days</div>';
+  const chips=days.map(([d,list],i)=>`<button class="dchip ${i===0?'on':''}" data-uid="${uid}" data-day="${d}">${d===todayISO()?'Today':dstr(d)} · ${list.length}</button>`).join('');
+  return `<div class="daychips">${chips}</div>
+    <div class="trailmap" id="map-${uid}"></div>
+    <div class="small muted" id="mapsub-${uid}"></div>`;
+}
+window._maps={};
+function renderTrailMap(uid, day){
+  const el=document.getElementById('map-'+uid);
+  if(!el||typeof L==='undefined')return;
+  if(window._maps[uid]){try{window._maps[uid].remove();}catch(e){}delete window._maps[uid];}
+  const pins=cache.activities.filter(a=>a.user_id===uid&&a.type==='check_in'&&a.created_at.slice(0,10)===day&&a.gps_lat!=null)
+    .sort((a,b)=>a.created_at.localeCompare(b.created_at));
+  const sub=document.getElementById('mapsub-'+uid);
+  if(!pins.length){el.innerHTML='<div class="empty" style="padding-top:96px">No GPS positions recorded this day</div>';
+    if(sub)sub.textContent='';return;}
+  const map=L.map(el,{zoomControl:false,attributionControl:true,scrollWheelZoom:false});
+  window._maps[uid]=map;
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
+  const pts=pins.map(a=>[a.gps_lat,a.gps_lng]);
+  if(pts.length>1)L.polyline(pts,{color:'#5C8F27',weight:3,opacity:.75,dashArray:'6 6'}).addTo(map);
+  pins.forEach((a,i)=>{
+    L.marker([a.gps_lat,a.gps_lng],{icon:L.divIcon({className:'',html:`<div class="tpin">${i+1}</div>`,iconSize:[26,26],iconAnchor:[13,13]})})
+      .addTo(map)
+      .bindPopup(`<b>${i+1} · ${tstr(a.created_at)}</b><br><a href="${mapsUrl(a)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>`);
+  });
+  if(pts.length>1)map.fitBounds(pts,{padding:[34,34]});
+  else map.setView(pts[0],14);
+  setTimeout(()=>map.invalidateSize(),80);
+  if(sub)sub.textContent=pins.length+' check-in'+(pins.length>1?'s':'')+(pts.length>1?' — dotted line shows the day\u2019s route':'');
+}
+
 const isField=()=>['rsm','asm','sales_executive'].includes(me.role);
 const nameOf=id=>{const p=cache.profiles.find(p=>p.id===id);return p?p.full_name:'—';};
 function toast(m,kind){const t=$('#toast');t.textContent=m;t.className='show'+(kind?' '+kind:'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='',2600);}
@@ -1187,9 +1235,18 @@ function bindView(){
     const {error}=await db.from('profiles').update({status:to}).eq('id',p.id);
     error?fail(error):(toast(to==='inactive'?'User deactivated':'User reactivated'),refresh());
   });
-  document.querySelectorAll('[data-fs]').forEach(r=>r.onclick=()=>{
+  document.querySelectorAll('[data-fs]').forEach(r=>r.onclick=e=>{
+    if(e.target.closest('.dchip')||e.target.closest('.trailmap')||e.target.closest('a'))return;
     const x=document.getElementById('fs-'+r.dataset.fs);
-    if(x){x.hidden=!x.hidden;r.classList.toggle('open',!x.hidden);}
+    if(x){x.hidden=!x.hidden;r.classList.toggle('open',!x.hidden);
+      if(!x.hidden){buzz(6);const days=ciDays(r.dataset.fs);if(days.length)renderTrailMap(r.dataset.fs,days[0][0]);}
+    }
+  });
+  document.querySelectorAll('.dchip').forEach(c=>c.onclick=e=>{
+    e.stopPropagation();
+    c.closest('.daychips').querySelectorAll('.dchip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');
+    renderTrailMap(c.dataset.uid,c.dataset.day);
   });
   // checked-in state class
   const ci=$('#checkin'); if(ci&&ci.textContent.includes('Checked in'))ci.classList.add('done');
