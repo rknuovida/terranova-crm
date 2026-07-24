@@ -256,6 +256,25 @@ header{position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:
 #statepick{width:auto;min-height:40px;padding:0 26px 0 12px;font-size:16px;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:8px;max-width:44vw}
 @media(min-width:768px){#statepick{font-size:13px;min-height:38px}}
 #logout{min-height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:0 12px;font-size:12px;font-weight:700}
+#bell{position:relative;min-height:34px;min-width:38px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);border-radius:8px;color:var(--text-2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+#bell.on{color:var(--brand-dark);border-color:var(--brand)}
+#bellbadge{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#E5484D;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 0 0 2px var(--surface)}
+#bellbadge[hidden]{display:none}
+#npanel{position:fixed;top:calc(58px + env(safe-area-inset-top,0px));right:10px;z-index:90;width:min(390px,calc(100vw - 20px));max-height:min(66vh,560px);overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--sh-lg);animation:frameIn .22s cubic-bezier(.16,1,.3,1) both}
+.nphead{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 16px 10px;background:var(--surface);border-bottom:1px solid var(--border);font-size:15px;font-weight:800;z-index:1}
+.nphead button{min-height:30px;border:none;background:none;color:var(--brand-dark);font-size:12px;font-weight:800;cursor:pointer;padding:0 4px}
+.npush{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-2)}
+.npush .btn{min-height:34px;font-size:12px}
+.nitem{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.nitem:last-child{border-bottom:none}
+.nitem .nt{font-size:13.5px;font-weight:700;line-height:1.3}
+.nitem .nb{font-size:12.5px;color:var(--text-2);margin-top:2px;line-height:1.35}
+.nitem .nm{font-size:11px;color:var(--text-3);margin-top:3px}
+.nitem .ndot{width:8px;height:8px;border-radius:50%;background:var(--brand);margin-top:6px;flex-shrink:0;opacity:0}
+.nitem.unread{background:rgba(140,198,63,.08)}
+.nitem.unread .ndot{opacity:1}
+.nempty{padding:34px 16px;text-align:center;color:var(--text-3);font-size:13px}
+@media(max-width:767px){#npanel{top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));right:8px;max-height:62vh}}
 nav{background:var(--surface)}
 .nwrap{max-width:1280px;margin:0 auto;display:flex}
 nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 12px;
@@ -474,6 +493,7 @@ main{max-width:1280px;margin:0 auto;padding:18px;padding-bottom:96px}
       <span class="chip chip-brand">CRM</span>
       <div class="hspace"></div>
       <select id="statepick" hidden></select>
+      <button id="bell" aria-label="Notifications" title="Notifications"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 3a6 6 0 0 0-6 6v3.2c0 .5-.15 1-.44 1.4L4 16h16l-1.56-2.4a2.6 2.6 0 0 1-.44-1.4V9a6 6 0 0 0-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span id="bellbadge" hidden></span></button>
       <div id="whoami" title="My profile"><div class="hme"><span id="hava"></span><div><div class="n"></div><div class="r"></div></div></div></div>
       <button id="logout">Sign out</button>
     </div>
@@ -483,6 +503,7 @@ main{max-width:1280px;margin:0 auto;padding:18px;padding-bottom:96px}
 </div>
 
 <button id="fab" hidden aria-label="Quick actions">+</button>
+<div id="npanel" hidden></div>
 <div id="ptr">↻</div>
 <div id="modalroot"></div>
 <div id="toast"></div>
@@ -618,6 +639,12 @@ async function boot(){
   $('#whoami .r').textContent=ROLE_LABEL[me.role]+(me.state?' · '+me.state:'');
   $('#hava').innerHTML=avatarHtml(me,30);
   $('#whoami').onclick=profileModal;
+  $('#bell').onclick=e=>{e.stopPropagation();toggleNotifPanel();};
+  document.addEventListener('click',e=>{
+    const p=$('#npanel');
+    if(!p.hidden&&!e.target.closest('#npanel')&&!e.target.closest('#bell'))p.hidden=true;
+  });
+  checkPush();
   const sp=$('#statepick');
   if(isLeader()||me.role==='admin_entry'){
     sp.hidden=false;
@@ -651,7 +678,7 @@ function buildNav(){
 /* ---------- data ---------- */
 async function loadAll(){
   const since=new Date(Date.now()-14*864e5).toISOString();
-  const [p,d,de,pr,sl,tg,ac]=await Promise.all([
+  const [p,d,de,pr,sl,tg,ac,nf]=await Promise.all([
     db.from('profiles').select('*').order('full_name'),
     db.from('dealers').select('*').order('name'),
     db.from('deals').select('*').order('updated_at',{ascending:false}),
@@ -659,11 +686,99 @@ async function loadAll(){
     db.from('incentive_slabs').select('*').order('threshold'),
     db.from('targets').select('*').eq('month',monthStartISO()),
     db.from('activities').select('*').or(`created_at.gte.${since},done.eq.false`).order('created_at',{ascending:false}).limit(800),
+    db.from('notifications').select('*').order('created_at',{ascending:false}).limit(30),
   ]);
   for(const r of [p,d,de,pr,sl,tg,ac]) if(r.error) return fail(r.error);
-  cache={profiles:p.data,dealers:d.data,deals:de.data,products:pr.data,slabs:sl.data,targets:tg.data,activities:ac.data};
+  cache={profiles:p.data,dealers:d.data,deals:de.data,products:pr.data,slabs:sl.data,targets:tg.data,activities:ac.data,notifs:nf.data||[]};
 }
 async function refresh(){await loadAll();render();}
+
+/* ---------- notifications (Layer A) + web push (Layer B) ---------- */
+const VAPID_PUB='BGeGlKV4F98NaeERrG-JvILjFXtb2XFdRgl_uQDhopCCwMayCDo6XZ-Q3CP7PjHSGXvBe5CpYeTA_MqlRgj3cz0';
+let pushOn=false;
+function tickPush(){try{db.functions.invoke('push-tick',{body:{}}).catch(()=>{});}catch(e){}}
+function unreadCount(){return (cache.notifs||[]).filter(n=>!n.read_at).length;}
+function renderBell(){
+  const b=$('#bellbadge');if(!b)return;
+  const n=unreadCount();
+  b.hidden=!n;b.textContent=n>9?'9+':n;
+  $('#bell').classList.toggle('on',n>0);
+}
+function timeAgo(iso){
+  const s=(Date.now()-new Date(iso).getTime())/1e3;
+  if(s<60)return 'just now';
+  if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';
+  const d=Math.floor(s/86400);return d===1?'yesterday':d+'d ago';
+}
+function pushCapable(){return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;}
+function isIOS(){return /iPhone|iPad|iPod/.test(navigator.userAgent);}
+function renderNotifPanel(){
+  const p=$('#npanel');if(p.hidden)return;
+  const list=(cache.notifs||[]);
+  let pushRow='';
+  if(pushOn) pushRow=`<div class="npush"><span>✅ Phone notifications are on</span></div>`;
+  else if(pushCapable()) pushRow=`<div class="npush"><span style="flex:1">Get nudges even when the app is closed</span><button class="btn btn-primary" id="npEnable">Enable</button></div>`;
+  else if(isIOS()) pushRow=`<div class="npush"><span>On iPhone: <b>Add to Home Screen</b> first, then open the app from there to enable notifications.</span></div>`;
+  p.innerHTML=`<div class="nphead"><span>Notifications</span>${unreadCount()?'<button id="nmarkall">Mark all read</button>':''}</div>
+    ${pushRow}
+    ${list.length?list.map(n=>`<div class="nitem ${n.read_at?'':'unread'}" data-nid="${n.id}">
+      <div style="flex:1;min-width:0"><div class="nt">${esc(n.title)}</div>
+      ${n.body?`<div class="nb">${esc(n.body)}</div>`:''}
+      <div class="nm">${timeAgo(n.created_at)}</div></div><span class="ndot"></span></div>`).join('')
+    :`<div class="nempty">Nothing yet — you'll see wins, reminders and daily nudges here.</div>`}`;
+  $('#npEnable')&&($('#npEnable').onclick=enablePush);
+  $('#nmarkall')&&($('#nmarkall').onclick=async()=>{
+    (cache.notifs||[]).forEach(n=>n.read_at=n.read_at||new Date().toISOString());
+    renderBell();renderNotifPanel();
+    await db.from('notifications').update({read_at:new Date().toISOString()}).is('read_at',null);
+  });
+  p.querySelectorAll('.nitem.unread').forEach(el=>el.onclick=async()=>{
+    const n=(cache.notifs||[]).find(x=>x.id===el.dataset.nid);
+    if(n&&!n.read_at){n.read_at=new Date().toISOString();renderBell();renderNotifPanel();
+      await db.from('notifications').update({read_at:n.read_at}).eq('id',n.id);}
+  });
+}
+function toggleNotifPanel(force){
+  const p=$('#npanel');
+  const show=force!==undefined?force:p.hidden;
+  p.hidden=!show;
+  if(show){renderNotifPanel();buzz(4);}
+}
+async function refreshNotifs(){
+  if(!me)return;
+  const {data}=await db.from('notifications').select('*').order('created_at',{ascending:false}).limit(30);
+  if(data){cache.notifs=data;renderBell();if(!$('#npanel').hidden)renderNotifPanel();}
+}
+function b64ToU8(b64){
+  const pad='='.repeat((4-b64.length%4)%4);
+  const raw=atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/'));
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+async function checkPush(){
+  try{
+    if(!pushCapable())return;
+    const reg=await navigator.serviceWorker.ready;
+    const s=await reg.pushManager.getSubscription();
+    pushOn=!!s&&Notification.permission==='granted';
+    if(s&&me){const j=s.toJSON();
+      db.from('push_subscriptions').upsert({endpoint:s.endpoint,user_id:me.id,p256dh:j.keys.p256dh,auth_key:j.keys.auth,ua:navigator.userAgent.slice(0,180)}).then(()=>{});}
+  }catch(e){}
+}
+async function enablePush(){
+  try{
+    if(!pushCapable())return toast('Not supported in this browser','err');
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted')return toast('Notifications were not allowed','err');
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToU8(VAPID_PUB)});
+    const j=sub.toJSON();
+    const {error}=await db.from('push_subscriptions').upsert({endpoint:sub.endpoint,user_id:me.id,p256dh:j.keys.p256dh,auth_key:j.keys.auth,ua:navigator.userAgent.slice(0,180)});
+    if(error)return fail(error);
+    pushOn=true;buzz(8);toast('Phone notifications on ✓','win');renderNotifPanel();
+  }catch(e){toast('Could not enable notifications','err');}
+}
+setInterval(()=>{if(me&&!document.hidden)refreshNotifs();},60000);
 
 const visDeals=()=>cache.deals.filter(x=>!stateFilter||(stateFilter==='__hq__'?x.state===null:x.state===stateFilter));
 const visDealers=()=>cache.dealers.filter(x=>(!stateFilter||stateFilter==='__hq__'?true:x.state===stateFilter)&&(showRemoved?true:x.status==='active'));
@@ -681,6 +796,7 @@ function render(){
   else if(curView==='admin')html=rAdmin();
   v.innerHTML=`<div class="viewwrap">${html}</div>`;
   bindView();
+  renderBell();
   requestAnimationFrame(animateIn);
   animateNums();
 }
@@ -1288,7 +1404,7 @@ async function moveStage(id,dir){
   const {error}=await db.from('deals').update({stage:STAGES[i]}).eq('id',id);
   if(error)return fail(error);
   pipeStage=STAGES[i];
-  if(STAGES[i]==='won'){toast('Deal marked as Won 🎉','win');buzz([20,60,20]);}
+  if(STAGES[i]==='won'){toast('Deal marked as Won 🎉','win');buzz([20,60,20]);tickPush();}
   else {toast(`Moved to ${STAGE_LABEL[STAGES[i]]}`);buzz(8);}
   refresh();
 }
@@ -1366,8 +1482,9 @@ function dealModal(d){
     if(error)return fail(error);
     closeModal();
     pipeStage=payload.stage;
-    if(payload.stage==='won'&&d.stage!=='won'){toast('Deal marked as Won 🎉','win');buzz([20,60,20]);}
+    if(payload.stage==='won'&&d.stage!=='won'){toast('Deal marked as Won 🎉','win');buzz([20,60,20]);tickPush();}
     else toast(isNew?'Deal created':'Saved');
+    if(isNew&&Number(payload.deal_size)>=500000)tickPush();
     refresh();
   };
   $('#f_del')&&($('#f_del').onclick=async()=>{
