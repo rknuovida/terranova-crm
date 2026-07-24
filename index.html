@@ -275,6 +275,16 @@ header{position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:
 .nitem.unread .ndot{opacity:1}
 .nempty{padding:34px 16px;text-align:center;color:var(--text-3);font-size:13px}
 @media(max-width:767px){#npanel{top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));right:8px;max-height:62vh}}
+.segpick{display:flex;gap:8px;margin:4px 0 12px}
+.segbtn{flex:1;min-height:52px;border:1.5px solid var(--border);background:var(--surface);border-radius:12px;padding:8px 10px;font-size:12.5px;font-weight:800;color:var(--text-2);cursor:pointer;text-align:center;line-height:1.3;-webkit-tap-highlight-color:transparent}
+.segbtn .s2{display:block;font-size:10.5px;font-weight:600;color:var(--text-3);margin-top:2px}
+.segbtn.on{border-color:var(--brand);color:var(--brand-dark);background:rgba(140,198,63,.10)}
+.custswitch{display:flex;gap:8px;margin:0 0 12px}
+.cbtn{min-height:40px;border:1.5px solid var(--border);background:var(--surface);border-radius:999px;padding:0 16px;font-size:12.5px;font-weight:800;color:var(--text-2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cbtn.on{border-color:var(--brand);color:var(--brand-dark);background:rgba(140,198,63,.10)}
+.qadd{margin:8px 0 4px;padding:12px;border:1.5px dashed var(--brand);border-radius:12px;background:rgba(140,198,63,.06)}
+.qadd .eyebrow{margin-bottom:2px}
+.srcchip{font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--brand-dark);background:rgba(140,198,63,.14);padding:3px 8px;border-radius:999px}
 nav{background:var(--surface)}
 .nwrap{max-width:1280px;margin:0 auto;display:flex}
 nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 12px;
@@ -520,6 +530,9 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const STATES = ['Kerala','Tamil Nadu','Andhra Pradesh','Telangana','Karnataka'];
 const STAGES = ['lead','qualified','negotiation','won','lost'];
+const TYPE_LABEL = {dealer:'DEALER',distributor:'DISTRIBUTOR',direct:'DIRECT CLIENT'};
+const SOURCES = ['Referral','Exhibition','Online','Walk-in','Dealer referral','Other'];
+let custView='dealers';
 const STAGE_LABEL = {lead:'Lead',qualified:'Qualified',negotiation:'Negotiation',won:'Won',lost:'Lost'};
 const ROLE_LABEL = {ceo:'CEO',coo:'COO',sales_head:'Sales Head (South)',rsm:'RSM',asm:'ASM',sales_executive:'Sales Executive',admin_entry:'Admin Entry'};
 const LEADERS = ['ceo','coo','sales_head'];
@@ -665,7 +678,7 @@ async function boot(){
 }
 
 function buildNav(){
-  const tabs=[['dash',isField()?'Today':'Dashboard'],['pipeline','Pipeline'],['myday','My Day'],['dealers','Dealers'],['team','Team'],['admin','Admin']];
+  const tabs=[['dash',isField()?'Today':'Dashboard'],['pipeline','Pipeline'],['myday','My Day'],['dealers','Customers'],['team','Team'],['admin','Admin']];
   $('#navtabs').innerHTML=tabs.filter(([k])=>{
     if(k==='myday'&&!isField())return false;
     if(k==='team'&&me.role==='admin_entry')return false;
@@ -678,7 +691,7 @@ function buildNav(){
 /* ---------- data ---------- */
 async function loadAll(){
   const since=new Date(Date.now()-14*864e5).toISOString();
-  const [p,d,de,pr,sl,tg,ac,nf]=await Promise.all([
+  const [p,d,de,pr,sl,tg,ac,nf,cs]=await Promise.all([
     db.from('profiles').select('*').order('full_name'),
     db.from('dealers').select('*').order('name'),
     db.from('deals').select('*').order('updated_at',{ascending:false}),
@@ -687,9 +700,10 @@ async function loadAll(){
     db.from('targets').select('*').eq('month',monthStartISO()),
     db.from('activities').select('*').or(`created_at.gte.${since},done.eq.false`).order('created_at',{ascending:false}).limit(800),
     db.from('notifications').select('*').order('created_at',{ascending:false}).limit(30),
+    db.from('consumers').select('*').order('name'),
   ]);
   for(const r of [p,d,de,pr,sl,tg,ac]) if(r.error) return fail(r.error);
-  cache={profiles:p.data,dealers:d.data,deals:de.data,products:pr.data,slabs:sl.data,targets:tg.data,activities:ac.data,notifs:nf.data||[]};
+  cache={profiles:p.data,dealers:d.data,deals:de.data,products:pr.data,slabs:sl.data,targets:tg.data,activities:ac.data,notifs:nf.data||[],consumers:cs.data||[]};
 }
 async function refresh(){await loadAll();render();}
 
@@ -820,9 +834,9 @@ function quickSheet(){
   if(isField()){
     acts.push(['📍','Check in now','qs_ci'],['🏪','Log a visit','qs_visit'],['⚡','New deal','qs_deal'],['🗓️','Add a task','qs_task']);
   }else if(me.role==='admin_entry'){
-    acts.push(['⚡','New lead','qs_deal'],['🏪','Add dealer','qs_dealer']);
+    acts.push(['⚡','New lead','qs_deal'],['🏪','Add dealer','qs_dealer'],['🏠','Add consumer','qs_consumer']);
   }else{
-    acts.push(['⚡','New deal','qs_deal'],['🏪','Add dealer','qs_dealer'],['👤','Add user','qs_user']);
+    acts.push(['⚡','New deal','qs_deal'],['🏪','Add dealer','qs_dealer'],['🏠','Add consumer','qs_consumer'],['👤','Add user','qs_user']);
   }
   openModal(`<h3>Quick actions</h3><div class="qsheet">${acts.map(([i,l,id])=>`<button class="qact" id="${id}"><span class="qi">${i}</span>${l}</button>`).join('')}</div>
   <div class="mfoot"><button class="btn btn-plain" onclick="closeModal()">Cancel</button></div>`);
@@ -831,6 +845,7 @@ function quickSheet(){
   $('#qs_deal')&&($('#qs_deal').onclick=()=>{closeModal();dealModal(null);});
   $('#qs_task')&&($('#qs_task').onclick=()=>{closeModal();taskModal();});
   $('#qs_dealer')&&($('#qs_dealer').onclick=()=>{closeModal();dealerModal(null);});
+  $('#qs_consumer')&&($('#qs_consumer').onclick=()=>{closeModal();consumerModal(null);});
   $('#qs_user')&&($('#qs_user').onclick=()=>{closeModal();userModal(null);});
 }
 /* ===== Pull to refresh ===== */
@@ -998,7 +1013,11 @@ function rDash(){
 }
 
 /* ===== Pipeline ===== */
-function dealerName(d){if(!d.dealer_id)return d.segment==='b2b'?'B2B / direct':'—';const x=cache.dealers.find(z=>z.id===d.dealer_id);return x?x.name:'—';}
+function dealerName(d){
+  if(d.segment==='b2c'){const c=(cache.consumers||[]).find(z=>z.id===d.consumer_id);return c?c.name:'Consumer';}
+  if(!d.dealer_id)return 'B2B / direct';
+  const x=cache.dealers.find(z=>z.id===d.dealer_id);return x?x.name:'—';
+}
 function rPipeline(){
   let deals=visDeals();
   if(pipeSeg)deals=deals.filter(d=>d.segment===pipeSeg);
@@ -1092,23 +1111,47 @@ function rMyDay(){
 
 /* ===== Dealers ===== */
 function rDealers(){
-  const list=visDealers().filter(d=>{
-    const q=(window._dq||'').toLowerCase();
-    return !q||d.name.toLowerCase().includes(q)||(d.district||'').toLowerCase().includes(q)||(d.contact_person||'').toLowerCase().includes(q);
-  });
-  const canAdd=me.role!=='sales_executive';
-  return `<div class="pagehead"><div><h2>Dealers &amp; Territory</h2><div class="sub">${isLeader()||me.role==='admin_entry'?'All states':(me.state||'')+(me.districts?.length?' · '+me.districts.join(', '):'')}</div></div></div>
-  <div class="dsearch">
-    <input id="dq" placeholder="Search dealers, district, contact…" value="${esc(window._dq||'')}">
-    ${canAdd?'<button class="btn btn-primary" id="adddealer" style="white-space:nowrap">+ Add</button>':''}
+  const q=(window._dq||'').toLowerCase();
+  const scopeSub=isLeader()||me.role==='admin_entry'?'All states':(me.state||'')+(me.districts?.length?' · '+me.districts.join(', '):'');
+  const head=`<div class="pagehead"><div><h2>Customers</h2><div class="sub">${scopeSub}</div></div></div>
+  <div class="custswitch">
+    <button class="cbtn ${custView==='dealers'?'on':''}" data-cv="dealers">🏪 Dealers &amp; Distributors</button>
+    <button class="cbtn ${custView==='consumers'?'on':''}" data-cv="consumers">🏠 Consumers</button>
   </div>
-  <label class="switchrow"><input type="checkbox" id="showrm" ${showRemoved?'checked':''}><span class="switch"></span>Show removed</label>
-  <div class="dealerlist">
+  <div class="dsearch">
+    <input id="dq" placeholder="${custView==='dealers'?'Search dealers, district, contact…':'Search consumers, district, phone…'}" value="${esc(window._dq||'')}">
+    ${custView==='consumers'||me.role!=='sales_executive'?'<button class="btn btn-primary" id="adddealer" style="white-space:nowrap">+ Add</button>':''}
+  </div>
+  <label class="switchrow"><input type="checkbox" id="showrm" ${showRemoved?'checked':''}><span class="switch"></span>Show removed</label>`;
+
+  if(custView==='consumers'){
+    const list=(cache.consumers||[]).filter(c=>(showRemoved?true:c.status==='active'))
+      .filter(c=>!q||c.name.toLowerCase().includes(q)||(c.district||'').toLowerCase().includes(q)||(c.phone||'').toLowerCase().includes(q));
+    return head+`<div class="dealerlist">
+    ${list.map(c=>{
+      const cd=cache.deals.filter(d=>d.consumer_id===c.id);
+      const open=cd.filter(d=>!['won','lost'].includes(d.stage)).length, won=cd.filter(d=>d.stage==='won').length;
+      return `<div class="card dcard lift" ${c.status!=='active'?'style="opacity:.55"':''}>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div><div class="nm">${esc(c.name)}${c.status!=='active'?' <span class="badge-removed">removed</span>':''}</div>
+        <div class="small" style="color:var(--text-2);margin-top:2px">${esc(c.state||'')}${c.district?' · '+esc(c.district):''}</div></div>
+        ${c.source?`<span class="srcchip">${esc(c.source)}</span>`:''}
+      </div>
+      <div class="small" style="color:var(--text-2)">${c.phone?esc(c.phone):'—'}${c.email?' · '+esc(c.email):''}</div>
+      ${c.address?`<div class="small" style="color:var(--text-2)">${esc(c.address)}</div>`:''}
+      <div class="small" style="color:var(--text-2)">${open} open deal${open===1?'':'s'}${won?' · '+won+' won':''}</div>
+      <div class="actionsrow"><button class="btn btn-ghost" data-editconsumer="${c.id}">Edit</button></div>
+    </div>`;}).join('')||'<div class="card"><div class="empty">No consumers yet — they get added here (or straight from a new B2C deal)</div></div>'}
+    </div>`;
+  }
+
+  const list=visDealers().filter(d=>!q||d.name.toLowerCase().includes(q)||(d.district||'').toLowerCase().includes(q)||(d.contact_person||'').toLowerCase().includes(q));
+  return head+`<div class="dealerlist">
     ${list.map(d=>`<div class="card dcard lift" ${d.status==='removed'?'style="opacity:.55"':''}>
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div><div class="nm">${esc(d.name)}${d.status==='removed'?' <span class="badge-removed">removed</span>':''}</div>
-        <div class="small" style="color:var(--text-2);margin-top:2px">${esc(d.state)}${d.district?' · '+esc(d.district):''}</div></div>
-        <span class="badge">${d.type}</span>
+        <div class="small" style="color:var(--text-2);margin-top:2px">${esc(d.state||'HQ / National')}${d.district?' · '+esc(d.district):''}</div></div>
+        <span class="badge">${TYPE_LABEL[d.type]||d.type}</span>
       </div>
       <div class="small" style="color:var(--text-2)">${esc(d.contact_person||'—')}${d.phone?' · '+esc(d.phone):''}</div>
       <div class="small" style="color:var(--text-2)">RSM ${esc(nameOf(d.assigned_rsm))}${d.assigned_asm?' · '+esc(nameOf(d.assigned_asm)):''}</div>
@@ -1358,7 +1401,9 @@ function bindView(){
       if(me.role==='admin_entry')return;
       const d=cache.deals.find(x=>x.id===c.dataset.deal); if(d)dealModal(d);
     };});
-  $('#adddealer')&&($('#adddealer').onclick=()=>dealerModal(null));
+  $('#adddealer')&&($('#adddealer').onclick=()=>custView==='consumers'?consumerModal(null):dealerModal(null));
+  document.querySelectorAll('.cbtn').forEach(b=>b.onclick=()=>{custView=b.dataset.cv;window._dq='';render();});
+  document.querySelectorAll('[data-editconsumer]').forEach(b=>b.onclick=()=>{const c=cache.consumers.find(x=>x.id===b.dataset.editconsumer);consumerModal(c);});
   document.querySelectorAll('[data-editdealer]').forEach(b=>b.onclick=()=>{const d=cache.dealers.find(x=>x.id===b.dataset.editdealer);dealerModal(d);});
   document.querySelectorAll('[data-hist]').forEach(b=>b.onclick=()=>toggleHist(b.dataset.hist));
   $('#dq')&&($('#dq').oninput=()=>{window._dq=$('#dq').value;clearTimeout(window._dqh);window._dqh=setTimeout(()=>{render();const q=$('#dq');q&&(q.focus(),q.setSelectionRange(q.value.length,q.value.length));},300);});
@@ -1428,18 +1473,53 @@ function closeModal(){$('#modalroot').style.display='none';$('#modalroot').inner
 function dealModal(d){
   const isNew=!d;d=d||{};
   const lockedLead=me.role==='admin_entry';
-  const dealerOpts='<option value="">— none / direct —</option>'+cache.dealers.filter(x=>x.status==='active').map(x=>`<option value="${x.id}" ${d.dealer_id===x.id?'selected':''}>${esc(x.name)} (${esc(x.state)})</option>`).join('');
+  const seg0=d.segment||'b2b';
+  const dealerOptsHtml=sel=>'<option value="">— choose —</option>'+cache.dealers.filter(x=>x.status==='active').map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${esc(x.name)} (${esc(x.state||'HQ')}${x.type!=='dealer'?' · '+esc(x.type):''})</option>`).join('');
+  const consumerOptsHtml=sel=>'<option value="">— choose —</option>'+(cache.consumers||[]).filter(x=>x.status==='active').map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${esc(x.name)}${x.district?' ('+esc(x.district)+')':''}</option>`).join('');
+  const dealerOpts=dealerOptsHtml(d.dealer_id);
   const prodOpts='<option value="">—</option>'+cache.products.map(p=>`<option value="${p.id}" ${d.product_id===p.id?'selected':''}>${esc(p.category)} — ${esc(p.name)}</option>`).join('');
   const stateOpts=(isLeader()||me.role==='admin_entry')
     ?'<option value="">HQ / National</option>'+STATES.map(s=>`<option ${d.state===s?'selected':''}>${s}</option>`).join('')
     :`<option selected>${me.state}</option>`;
   const ownerOpts=cache.profiles.filter(p=>p.status==='active'&&['rsm','asm','ceo','coo','sales_head'].includes(p.role)).map(p=>`<option value="${p.id}" ${(d.owner||me.id)===p.id?'selected':''}>${esc(p.full_name)}</option>`).join('');
   openModal(`<h3>${isNew?(lockedLead?'New lead':'New deal'):'Edit deal'}</h3><div class="small muted">${isNew?'':esc(STAGE_LABEL[d.stage])}</div>
+  <div class="segpick" id="segpick">
+    <button type="button" class="segbtn" data-seg="b2b">🏪 B2B<span class="s2">Dealer · Distributor · Direct client</span></button>
+    <button type="button" class="segbtn" data-seg="b2c">🏠 B2C<span class="s2">Direct consumer</span></button>
+  </div>
+  <input type="hidden" id="f_seg" value="${seg0}">
   <div class="msec"><div class="eyebrow">Deal details</div>
   <label>Opportunity / account *<input id="f_title" value="${esc(d.title||'')}" placeholder="e.g. Sunrise Electricals — 5KVA order"></label>
+  <div id="row_b2b">
+    <label>Dealer / Distributor *<span style="display:flex;gap:8px"><select id="f_dealer" style="flex:1">${dealerOpts}</select><button type="button" class="btn btn-ghost" id="f_newdealer" style="white-space:nowrap">+ New</button></span></label>
+    <div class="qadd" id="qad" hidden>
+      <div class="eyebrow">New dealer / distributor</div>
+      <div class="mrow">
+        <label>Name *<input id="qd_name"></label>
+        <label>Type<select id="qd_type"><option value="dealer">Dealer</option><option value="distributor">Distributor</option>${isLeader()?'<option value="direct">Direct B2B client</option>':''}</select></label>
+        ${isLeader()||me.role==='admin_entry'?`<label>State<select id="qd_state"><option value="">HQ / National</option>${STATES.map(s=>`<option ${me.state===s?'selected':''}>${s}</option>`).join('')}</select></label>`:''}
+        <label>District${me.role==='asm'?`<select id="qd_dist">${(me.districts||[]).map(x=>`<option>${x}</option>`).join('')}</select>`:'<input id="qd_dist">'}</label>
+        <label>Phone<input id="qd_ph"></label>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px"><button type="button" class="btn btn-plain" id="qd_cancel">Cancel</button><button type="button" class="btn btn-primary" id="qd_save">Save &amp; select</button></div>
+    </div>
+  </div>
+  <div id="row_b2c">
+    <label>Consumer *<span style="display:flex;gap:8px"><select id="f_consumer" style="flex:1">${consumerOptsHtml(d.consumer_id)}</select><button type="button" class="btn btn-ghost" id="f_newconsumer" style="white-space:nowrap">+ New</button></span></label>
+    <div class="qadd" id="qac" hidden>
+      <div class="eyebrow">New consumer</div>
+      <div class="mrow">
+        <label>Name *<input id="qc_name"></label>
+        <label>Phone<input id="qc_ph"></label>
+        ${isLeader()||me.role==='admin_entry'?`<label>State<select id="qc_state">${STATES.map(s=>`<option ${me.state===s?'selected':''}>${s}</option>`).join('')}</select></label>`:''}
+        <label>District${me.role==='asm'?`<select id="qc_dist">${(me.districts||[]).map(x=>`<option>${x}</option>`).join('')}</select>`:'<input id="qc_dist">'}</label>
+        <label>Address<input id="qc_addr" placeholder="site / installation address"></label>
+        <label>Source<select id="qc_src">${SOURCES.map(s=>`<option>${s}</option>`).join('')}</select></label>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px"><button type="button" class="btn btn-plain" id="qc_cancel">Cancel</button><button type="button" class="btn btn-primary" id="qc_save">Save &amp; select</button></div>
+    </div>
+  </div>
   <div class="mrow">
-    <label>Dealer / distributor<select id="f_dealer">${dealerOpts}</select></label>
-    <label>Segment<select id="f_seg"><option value="b2c" ${d.segment!=='b2b'?'selected':''}>B2C</option><option value="b2b" ${d.segment==='b2b'?'selected':''}>B2B</option></select></label>
     <label>Stage<select id="f_stage" ${lockedLead?'disabled':''}>${STAGES.map(s=>`<option value="${s}" ${(d.stage||'lead')===s?'selected':''}>${STAGE_LABEL[s]}</option>`).join('')}</select></label>
     <label>Deal size (₹)<input id="f_size" type="number" min="0" value="${d.deal_size??''}">
       <span style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${[50000,100000,250000,500000].map(v=>`<button type="button" class="badge sizechip" data-size="${v}" style="cursor:pointer;padding:5px 9px">${inr(v)}</button>`).join('')}</span></label>
@@ -1467,10 +1547,43 @@ function dealModal(d){
     <button class="btn btn-plain" onclick="closeModal()">Cancel</button>
     <button class="btn btn-primary" id="f_save">${isNew?'Create':'Save'}</button></div>`);
   document.querySelectorAll('.sizechip').forEach(c=>c.onclick=()=>{$('#f_size').value=c.dataset.size;buzz(5);});
+  const setSeg=s=>{$('#f_seg').value=s;
+    document.querySelectorAll('.segbtn').forEach(b=>b.classList.toggle('on',b.dataset.seg===s));
+    $('#row_b2b').hidden=s!=='b2b';$('#row_b2c').hidden=s!=='b2c';};
+  document.querySelectorAll('.segbtn').forEach(b=>b.onclick=()=>{setSeg(b.dataset.seg);buzz(5);});
+  setSeg(seg0);
+  $('#f_newdealer').onclick=()=>{$('#qad').hidden=!$('#qad').hidden;if(!$('#qad').hidden)$('#qd_name').focus();};
+  $('#qd_cancel').onclick=()=>$('#qad').hidden=true;
+  $('#qd_save').onclick=async()=>{
+    const nm=$('#qd_name').value.trim();
+    if(!nm)return toast('Dealer name is required','err');
+    const st=(isLeader()||me.role==='admin_entry')?($('#qd_state').value||null):me.state;
+    const {data:row,error}=await db.from('dealers').insert({name:nm,type:$('#qd_type').value,state:st,
+      district:$('#qd_dist').value||null,phone:$('#qd_ph').value||null,
+      assigned_rsm:me.role==='rsm'?me.id:null,assigned_asm:me.role==='asm'?me.id:null}).select().single();
+    if(error)return fail(error.message?.includes('row-level security')?{message:'Not allowed — outside your territory.'}:error);
+    cache.dealers.push(row);cache.dealers.sort((a,b)=>a.name.localeCompare(b.name));
+    $('#f_dealer').innerHTML=dealerOptsHtml(row.id);$('#qad').hidden=true;buzz(8);toast('Dealer added ✓','win');
+  };
+  $('#f_newconsumer').onclick=()=>{$('#qac').hidden=!$('#qac').hidden;if(!$('#qac').hidden)$('#qc_name').focus();};
+  $('#qc_cancel').onclick=()=>$('#qac').hidden=true;
+  $('#qc_save').onclick=async()=>{
+    const nm=$('#qc_name').value.trim();
+    if(!nm)return toast('Consumer name is required','err');
+    const st=(isLeader()||me.role==='admin_entry')?$('#qc_state').value:me.state;
+    const {data:row,error}=await db.from('consumers').insert({name:nm,phone:$('#qc_ph').value||null,state:st,
+      district:$('#qc_dist').value||null,address:$('#qc_addr').value||null,source:$('#qc_src').value}).select().single();
+    if(error)return fail(error.message?.includes('row-level security')?{message:'Not allowed — outside your territory.'}:error);
+    cache.consumers.push(row);cache.consumers.sort((a,b)=>a.name.localeCompare(b.name));
+    $('#f_consumer').innerHTML=consumerOptsHtml(row.id);$('#qac').hidden=true;buzz(8);toast('Consumer added ✓','win');
+  };
   $('#f_save').onclick=async()=>{
     const v=x=>$(x).value||null;
     if(!v('#f_title'))return toast('Title is required','err');
-    const payload={title:v('#f_title'),dealer_id:v('#f_dealer'),segment:$('#f_seg').value,
+    const seg=$('#f_seg').value;
+    if(seg==='b2b'&&!v('#f_dealer'))return toast('Pick the dealer / distributor — or add one with “+ New”','err');
+    if(seg==='b2c'&&!v('#f_consumer'))return toast('Pick the consumer — or add one with “+ New”','err');
+    const payload={title:v('#f_title'),dealer_id:seg==='b2b'?v('#f_dealer'):null,consumer_id:seg==='b2c'?v('#f_consumer'):null,segment:seg,
       stage:lockedLead?'lead':$('#f_stage').value,deal_size:v('#f_size'),product_id:v('#f_prod'),
       expected_close:v('#f_close'),state:(isLeader()||me.role==='admin_entry')?(v('#f_state')||null):me.state,
       district:v('#f_dist'),owner:isLeader()?v('#f_owner'):(d.owner||me.id),
@@ -1497,13 +1610,13 @@ function dealModal(d){
 function dealerModal(d){
   const isNew=!d;d=d||{};
   const canMoveState=isLeader(); // cross-state reassignment needs Sales Head — RLS blocks RSMs server-side too
-  const stateOpts=STATES.map(s=>`<option ${(d.state||me.state)===s?'selected':''}>${s}</option>`).join('');
+  const stateOpts=(canMoveState?`<option value="" ${!d.state&&!isNew?'selected':''}>HQ / National</option>`:'')+STATES.map(s=>`<option ${(d.state||me.state)===s?'selected':''}>${s}</option>`).join('');
   const rsms=cache.profiles.filter(p=>p.role==='rsm'&&p.status==='active');
   const asms=cache.profiles.filter(p=>p.role==='asm'&&p.status==='active');
   openModal(`<h3>${isNew?'Add dealer / distributor':'Edit dealer'}</h3>
   <label>Dealer name *<input id="g_name" value="${esc(d.name||'')}"></label>
   <div class="mrow">
-    <label>Type<select id="g_type"><option value="dealer" ${d.type!=='distributor'?'selected':''}>Dealer</option><option value="distributor" ${d.type==='distributor'?'selected':''}>Distributor</option></select></label>
+    <label>Type<select id="g_type"><option value="dealer" ${(d.type||'dealer')==='dealer'?'selected':''}>Dealer</option><option value="distributor" ${d.type==='distributor'?'selected':''}>Distributor</option>${isLeader()||d.type==='direct'?`<option value="direct" ${d.type==='direct'?'selected':''}>Direct B2B client</option>`:''}</select></label>
     <label>Status<select id="g_status"><option value="active" ${d.status!=='removed'?'selected':''}>Active</option><option value="removed" ${d.status==='removed'?'selected':''}>Removed</option></select></label>
     <label>State ${canMoveState||(isNew&&me.role==='admin_entry')?'':'<span class="hint">— leadership-only</span>'}<select id="g_state" ${canMoveState||(isNew&&me.role==='admin_entry')?'':'disabled'}>${me.role==='admin_entry'&&isNew?STATES.map(s=>`<option ${(d.state)===s?'selected':''}>${s}</option>`).join(''):stateOpts}</select></label>
     <label>District${me.role==='asm'?`<select id="g_dist">${(me.districts||[]).map(x=>`<option ${d.district===x?'selected':''}>${x}</option>`).join('')}</select>`:`<input id="g_dist" value="${esc(d.district||'')}">`}</label>
@@ -1523,7 +1636,7 @@ function dealerModal(d){
     const v=x=>$(x).value||null;
     if(!v('#g_name'))return toast('Name is required','err');
     const payload={name:v('#g_name'),type:$('#g_type').value,status:$('#g_status').value,
-      state:$('#g_state').value,district:v('#g_dist'),contact_person:v('#g_cp'),phone:v('#g_ph'),
+      state:$('#g_state').value||null,district:v('#g_dist'),contact_person:v('#g_cp'),phone:v('#g_ph'),
       credit_limit:v('#g_cl'),payment_terms:v('#g_pt'),assigned_rsm:v('#g_rsm'),assigned_asm:v('#g_asm')};
     const q=isNew?db.from('dealers').insert(payload):db.from('dealers').update(payload).eq('id',d.id);
     const {error}=await q;
@@ -1537,6 +1650,35 @@ function dealerModal(d){
     closeModal();toast('Dealer removed');refresh();});
 }
 
+function consumerModal(c){
+  const isNew=!c;c=c||{};
+  const canPickState=isLeader()||me.role==='admin_entry';
+  const stateOpts=STATES.map(s=>`<option ${(c.state||me.state)===s?'selected':''}>${s}</option>`).join('');
+  openModal(`<h3>${isNew?'Add consumer':'Edit consumer'}</h3><div class="small muted">Direct (B2C) customer — same territory rules as dealers</div>
+  <label>Name *<input id="c_name" value="${esc(c.name||'')}"></label>
+  <div class="mrow">
+    <label>Phone<input id="c_ph" value="${esc(c.phone||'')}"></label>
+    <label>Email<input id="c_em" type="email" value="${esc(c.email||'')}"></label>
+    <label>State ${canPickState?'':'<span class="hint">— your territory</span>'}<select id="c_state" ${canPickState?'':'disabled'}>${stateOpts}</select></label>
+    <label>District${me.role==='asm'?`<select id="c_dist">${(me.districts||[]).map(x=>`<option ${c.district===x?'selected':''}>${x}</option>`).join('')}</select>`:`<input id="c_dist" value="${esc(c.district||'')}">`}</label>
+    <label>Source<select id="c_src">${SOURCES.map(s=>`<option ${c.source===s?'selected':''}>${s}</option>`).join('')}</select></label>
+    <label>Status<select id="c_status"><option value="active" ${c.status!=='removed'?'selected':''}>Active</option><option value="removed" ${c.status==='removed'?'selected':''}>Removed</option></select></label>
+  </div>
+  <label>Address <span class="hint">(site / installation)</span><input id="c_addr" value="${esc(c.address||'')}"></label>
+  <div class="mfoot"><button class="btn btn-plain" onclick="closeModal()">Cancel</button>
+  <button class="btn btn-primary" id="c_save">${isNew?'Add consumer':'Save'}</button></div>`);
+  $('#c_save').onclick=async()=>{
+    const v=x=>$(x).value||null;
+    if(!v('#c_name'))return toast('Name is required','err');
+    const payload={name:v('#c_name'),phone:v('#c_ph'),email:v('#c_em'),state:$('#c_state').value,
+      district:v('#c_dist'),source:$('#c_src').value,status:$('#c_status').value,address:v('#c_addr')};
+    const q=isNew?db.from('consumers').insert(payload):db.from('consumers').update(payload).eq('id',c.id);
+    const {error}=await q;
+    if(error)return fail(error.message?.includes('row-level security')?{message:'Not allowed — this change crosses your territory boundary.'}:error);
+    closeModal();toast(isNew?'Consumer added':'Saved');refresh();
+  };
+}
+
 function taskModal(){
   openModal(`<h3>New task</h3>
   <label>What *<input id="t_title" placeholder="e.g. Call Sunrise Electricals re: quote"></label>
@@ -1544,30 +1686,42 @@ function taskModal(){
     <label>Type<select id="t_type"><option value="task">Task</option><option value="call">Call</option><option value="visit">Visit</option></select></label>
     <label>Due date<input id="t_due" type="date" value="${todayISO()}"></label>
   </div>
-  <label>Dealer (optional)<select id="t_dealer"><option value="">—</option>${cache.dealers.filter(x=>x.status==='active').map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></label>
+  <label>Customer (optional)<select id="t_dealer"><option value="">—</option>
+    <optgroup label="Dealers &amp; Distributors">${cache.dealers.filter(x=>x.status==='active').map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</optgroup>
+    <optgroup label="Consumers">${(cache.consumers||[]).filter(x=>x.status==='active').map(x=>`<option value="c:${x.id}">${esc(x.name)}</option>`).join('')}</optgroup>
+  </select></label>
   <div class="mfoot"><button class="btn btn-plain" onclick="closeModal()">Cancel</button>
   <button class="btn btn-primary" id="t_save">Add</button></div>`);
   $('#t_save').onclick=async()=>{
     if(!$('#t_title').value)return toast('Title is required','err');
+    const tsel=$('#t_dealer').value;
     const {error}=await db.from('activities').insert({type:$('#t_type').value,title:$('#t_title').value,
-      due_date:$('#t_due').value||null,dealer_id:$('#t_dealer').value||null,user_id:me.id});
+      due_date:$('#t_due').value||null,
+      dealer_id:tsel&&!tsel.startsWith('c:')?tsel:null,
+      consumer_id:tsel.startsWith('c:')?tsel.slice(2):null,user_id:me.id});
     if(error)return fail(error);
     closeModal();toast('Task added');refresh();};
 }
 
 function visitModal(){
   openModal(`<h3>Log a visit</h3><div class="small muted">Quick field entry — same record as Pipeline, abbreviated</div>
-  <label>Dealer *<select id="v_dealer"><option value="">— choose —</option>${cache.dealers.filter(x=>x.status==='active').map(x=>`<option value="${x.id}">${esc(x.name)}${x.district?' ('+esc(x.district)+')':''}</option>`).join('')}</select></label>
+  <label>Customer *<select id="v_dealer"><option value="">— choose —</option>
+    <optgroup label="Dealers &amp; Distributors">${cache.dealers.filter(x=>x.status==='active').map(x=>`<option value="${x.id}">${esc(x.name)}${x.district?' ('+esc(x.district)+')':''}</option>`).join('')}</optgroup>
+    <optgroup label="Consumers">${(cache.consumers||[]).filter(x=>x.status==='active').map(x=>`<option value="c:${x.id}">${esc(x.name)}${x.district?' ('+esc(x.district)+')':''}</option>`).join('')}</optgroup>
+  </select></label>
   <label>Visit notes *<textarea id="v_notes" rows="3" placeholder="Who you met, what was discussed, stock situation…"></textarea></label>
   <label>Linked deal (optional)<select id="v_deal"><option value="">—</option>${cache.deals.filter(d=>!['won','lost'].includes(d.stage)).map(d=>`<option value="${d.id}">${esc(d.title)}</option>`).join('')}</select></label>
   <label>Next action for that deal<input id="v_na" placeholder="e.g. Send revised quote by Friday"></label>
   <div class="mfoot"><button class="btn btn-plain" onclick="closeModal()">Cancel</button>
   <button class="btn btn-primary" id="v_save">Log visit</button></div>`);
   $('#v_save').onclick=async()=>{
-    if(!$('#v_dealer').value)return toast('Pick the dealer you visited','err');
+    const vsel=$('#v_dealer').value;
+    if(!vsel)return toast('Pick the customer you visited','err');
     if(!$('#v_notes').value)return toast('Add a short note','err');
     const {error}=await db.from('activities').insert({type:'visit',title:'Visit logged',done:true,
-      dealer_id:$('#v_dealer').value,notes:$('#v_notes').value,user_id:me.id,due_date:todayISO()});
+      dealer_id:!vsel.startsWith('c:')?vsel:null,
+      consumer_id:vsel.startsWith('c:')?vsel.slice(2):null,
+      notes:$('#v_notes').value,user_id:me.id,due_date:todayISO()});
     if(error)return fail(error);
     if($('#v_deal').value&&$('#v_na').value){
       const {error:e2}=await db.from('deals').update({next_action:$('#v_na').value}).eq('id',$('#v_deal').value);
