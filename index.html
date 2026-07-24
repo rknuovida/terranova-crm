@@ -1060,7 +1060,7 @@ function rTeam(){
 /* ===== Admin (leadership only) ===== */
 function rAdmin(){
   const users=[...cache.profiles].sort((a,b)=>(a.status||'').localeCompare(b.status||'')||(a.role||'').localeCompare(b.role||'')||a.full_name.localeCompare(b.full_name));
-  return `<div class="pagehead"><div><h2>Admin — Team &amp; Access</h2><div class="sub">Create users, assign roles &amp; states, reset passwords, deactivate leavers</div></div>
+  return `<div class="pagehead"><div><h2>Admin — Team &amp; Access</h2><div class="sub">Create users, assign roles &amp; states, change emails, reset passwords, deactivate leavers</div></div>
     <button class="btn btn-primary btn-sm" id="adduser">+ Add user</button></div>
   <div class="dealerlist">
     ${users.map(p=>`<div class="card dcard lift" ${p.status!=='active'?'style="opacity:.6"':''}>
@@ -1074,6 +1074,7 @@ function rAdmin(){
       <div class="actionsrow">
         <button class="btn btn-ghost" data-edituser="${p.id}">Edit</button>
         <button class="btn btn-ghost" style="background:var(--sunken)" data-resetpw="${p.id}">Reset password</button>
+        <button class="btn btn-ghost" data-changeemail="${p.id}">Change email</button>
         ${p.id!==me.id?`<button class="btn ${p.status==='active'?'btn-danger':'btn-ghost'}" data-togglestatus="${p.id}">${p.status==='active'?'Deactivate':'Reactivate'}</button>`:''}
       </div>
     </div>`).join('')}
@@ -1135,6 +1136,22 @@ function resetPwModal(p){
   };
 }
 
+function changeEmailModal(p){
+  openModal(`<h3>Change login email</h3><div class="small muted">${esc(p.full_name)} · currently ${esc(p.email||'')}</div>
+  <label>New email * <span class="hint">(they'll sign in with this from now on — password stays the same)</span>
+    <input id="ce_email" type="email" placeholder="name@company.com" value="${esc(p.email||'')}"></label>
+  <div class="mfoot"><button class="btn btn-plain" onclick="closeModal()">Cancel</button>
+  <button class="btn btn-primary" id="ce_save">Change email</button></div>`);
+  $('#ce_save').onclick=async()=>{
+    const em=$('#ce_email').value.trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em))return toast('Enter a valid email','err');
+    if(em.toLowerCase()===(p.email||'').toLowerCase()){closeModal();return;}
+    const {error}=await db.rpc('admin_change_email',{p_user:p.id,p_new_email:em});
+    if(error)return fail(error);
+    closeModal();toast('Email changed ✓ — they now sign in as '+em.toLowerCase(),'win');refresh();
+  };
+}
+
 /* ===== My profile (all users) ===== */
 function profileModal(){
   openModal(`<h3>My profile</h3><div class="small muted">${esc(me.email||'')} · ${ROLE_LABEL[me.role]}</div>
@@ -1146,6 +1163,10 @@ function profileModal(){
   </div>
   <label>Full name<input id="p_name" value="${esc(me.full_name||'')}"></label>
   <label>Phone<input id="p_phone" value="${esc(me.phone||'')}"></label>
+  <div class="msec"><div class="eyebrow">Login email</div>
+    <label style="margin-top:6px">Email <span class="hint">(change it and you'll sign in with the new one — password stays the same)</span>
+      <input id="p_email" type="email" value="${esc(me.email||'')}"></label>
+  </div>
   <div class="msec"><div class="eyebrow">Change password</div>
     <div class="mrow">
       <label>New password<input id="p_pw1" type="password" placeholder="min 8 characters"></label>
@@ -1176,10 +1197,17 @@ function profileModal(){
         const {error:pe}=await db.auth.updateUser({password:pw1});
         if(pe)return fail(pe);
       }
-      me={...me,full_name:name,phone:$('#p_phone').value||null,avatar_url};
+      let newEmail=($('#p_email').value||'').trim().toLowerCase(), emailChanged=false;
+      if(newEmail && newEmail!==(me.email||'').toLowerCase()){
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail))return toast('Enter a valid email','err');
+        const {error:ee}=await db.rpc('change_my_email',{p_new_email:newEmail});
+        if(ee)return fail(ee);
+        emailChanged=true;
+      }
+      me={...me,full_name:name,phone:$('#p_phone').value||null,avatar_url,...(emailChanged?{email:newEmail}:{})};
       $('#whoami .n').textContent=me.full_name;
       $('#hava').innerHTML=avatarHtml(me,30);
-      closeModal();toast((pw1?'Profile & password updated ✓':'Profile updated ✓'),'win');refresh();
+      closeModal();toast(emailChanged?'Profile updated ✓ — sign in as '+newEmail+' next time':(pw1?'Profile & password updated ✓':'Profile updated ✓'),'win');refresh();
     }catch(e){fail(e);}
   };
 }
@@ -1228,6 +1256,7 @@ function bindView(){
   $('#adduser')&&($('#adduser').onclick=()=>userModal(null));
   document.querySelectorAll('[data-edituser]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.edituser);userModal(p);});
   document.querySelectorAll('[data-resetpw]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.resetpw);resetPwModal(p);});
+  document.querySelectorAll('[data-changeemail]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.changeemail);changeEmailModal(p);});
   document.querySelectorAll('[data-togglestatus]').forEach(b=>b.onclick=async()=>{
     const p=cache.profiles.find(x=>x.id===b.dataset.togglestatus);
     const to=p.status==='active'?'inactive':'active';
