@@ -533,6 +533,7 @@ const STAGES = ['lead','qualified','negotiation','won','lost'];
 const TYPE_LABEL = {dealer:'DEALER',distributor:'DISTRIBUTOR',direct:'DIRECT CLIENT'};
 const SOURCES = ['Referral','Exhibition','Online','Walk-in','Dealer referral','Other'];
 let custView='dealers';
+let adminView='team';
 const STAGE_LABEL = {lead:'Lead',qualified:'Qualified',negotiation:'Negotiation',won:'Won',lost:'Lost'};
 const ROLE_LABEL = {ceo:'CEO',coo:'COO',sales_head:'Sales Head (South)',rsm:'RSM',asm:'ASM',sales_executive:'Sales Executive',admin_entry:'Admin Entry'};
 const LEADERS = ['ceo','coo','sales_head'];
@@ -695,7 +696,7 @@ async function loadAll(){
     db.from('profiles').select('*').order('full_name'),
     db.from('dealers').select('*').order('name'),
     db.from('deals').select('*').order('updated_at',{ascending:false}),
-    db.from('products').select('*').eq('active',true).order('sort'),
+    db.from('products').select('*').order('sort'),
     db.from('incentive_slabs').select('*').order('threshold'),
     db.from('targets').select('*').eq('month',monthStartISO()),
     db.from('activities').select('*').or(`created_at.gte.${since},done.eq.false`).order('created_at',{ascending:false}).limit(800),
@@ -1218,10 +1219,34 @@ function rTeam(){
 
 /* ===== Admin (leadership only) ===== */
 function rAdmin(){
+  const head=`<div class="pagehead"><div><h2>Admin</h2><div class="sub">${adminView==='team'?'Create users, assign roles &amp; states, change emails, reset passwords, deactivate leavers':'The product list every deal form picks from — add, edit, retire'}</div></div>
+    ${adminView==='team'?'<button class="btn btn-primary btn-sm" id="adduser">+ Add user</button>':'<button class="btn btn-primary btn-sm" id="addproduct">+ Add product</button>'}</div>
+  <div class="custswitch">
+    <button class="cbtn ${adminView==='team'?'on':''}" data-av="team">👥 Team &amp; Access</button>
+    <button class="cbtn ${adminView==='products'?'on':''}" data-av="products">📦 Products</button>
+  </div>`;
+
+  if(adminView==='products'){
+    const prods=[...cache.products].sort((a,b)=>a.category.localeCompare(b.category)||a.sort-b.sort||a.name.localeCompare(b.name));
+    const cats=[...new Set(prods.map(p=>p.category))];
+    return head+cats.map(cat=>`<div class="eyebrow" style="margin:14px 2px 8px">${esc(cat)}</div>
+    <div class="dealerlist">
+      ${prods.filter(p=>p.category===cat).map(p=>{
+        const used=cache.deals.filter(d=>d.product_id===p.id).length;
+        return `<div class="card dcard lift" ${!p.active?'style="opacity:.55"':''}>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div><div class="nm">${esc(p.name)}</div>
+          ${p.spec?`<div class="small" style="color:var(--text-2);margin-top:2px">${esc(p.spec)}</div>`:''}</div>
+          <span class="statuschip ${p.active?'active':'inactive'}">${p.active?'ACTIVE':'RETIRED'}</span>
+        </div>
+        <div class="small" style="color:var(--text-2)">${used} deal${used===1?'':'s'} use this${p.sort!==100?' · sort '+p.sort:''}</div>
+        <div class="actionsrow"><button class="btn btn-ghost" data-editproduct="${p.id}">Edit</button></div>
+      </div>`;}).join('')}
+    </div>`).join('')||head+'<div class="card"><div class="empty">No products yet — add the first one</div></div>';
+  }
+
   const users=[...cache.profiles].sort((a,b)=>(a.status||'').localeCompare(b.status||'')||(a.role||'').localeCompare(b.role||'')||a.full_name.localeCompare(b.full_name));
-  return `<div class="pagehead"><div><h2>Admin — Team &amp; Access</h2><div class="sub">Create users, assign roles &amp; states, change emails, reset passwords, deactivate leavers</div></div>
-    <button class="btn btn-primary btn-sm" id="adduser">+ Add user</button></div>
-  <div class="dealerlist">
+  return head+`<div class="dealerlist">
     ${users.map(p=>`<div class="card dcard lift" ${p.status!=='active'?'style="opacity:.6"':''}>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
         <div style="display:flex;gap:10px;align-items:center">${avatarHtml(p,38)}
@@ -1278,6 +1303,42 @@ function userModal(p){
       closeModal();toast('Saved');refresh();
     }
   };
+}
+
+function productModal(p){
+  const isNew=!p;p=p||{};
+  const cats=[...new Set(cache.products.map(x=>x.category))];
+  const used=isNew?0:cache.deals.filter(d=>d.product_id===p.id).length;
+  openModal(`<h3>${isNew?'Add product':'Edit product'}</h3><div class="small muted">Appears in the Product dropdown on every deal</div>
+  <label>Product name *<input id="pr_name" value="${esc(p.name||'')}" placeholder="e.g. T-2350 Sine Wave Inverter"></label>
+  <div class="mrow">
+    <label>Category *<input id="pr_cat" list="pr_cats" value="${esc(p.category||'')}" placeholder="pick or type a new one"><datalist id="pr_cats">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></label>
+    <label>Spec <span class="hint">(optional)</span><input id="pr_spec" value="${esc(p.spec||'')}" placeholder="e.g. 2350VA / 24V"></label>
+    <label>Sort order <span class="hint">(lower = higher in list)</span><input id="pr_sort" type="number" value="${p.sort??100}"></label>
+    <label>Status<select id="pr_active"><option value="true" ${p.active!==false?'selected':''}>Active</option><option value="false" ${p.active===false?'selected':''}>Retired (hidden from new deals)</option></select></label>
+  </div>
+  ${!isNew&&used?`<div class="small muted" style="margin-top:8px">Used by ${used} deal${used===1?'':'s'} — it can be retired but not deleted, so history stays intact.</div>`:''}
+  <div class="mfoot">${!isNew&&!used?'<button class="btn btn-danger" id="pr_del">Delete</button>':''}
+    <span style="flex:1"></span>
+    <button class="btn btn-plain" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" id="pr_save">${isNew?'Add product':'Save'}</button></div>`);
+  $('#pr_save').onclick=async()=>{
+    const nm=$('#pr_name').value.trim(), cat=$('#pr_cat').value.trim();
+    if(!nm)return toast('Product name is required','err');
+    if(!cat)return toast('Category is required','err');
+    const payload={name:nm,category:cat,spec:$('#pr_spec').value||null,
+      sort:parseInt($('#pr_sort').value)||100,active:$('#pr_active').value==='true'};
+    const q=isNew?db.from('products').insert(payload):db.from('products').update(payload).eq('id',p.id);
+    const {error}=await q;
+    if(error)return fail(error);
+    closeModal();toast(isNew?'Product added ✓':'Saved','win');refresh();
+  };
+  $('#pr_del')&&($('#pr_del').onclick=async()=>{
+    if(!confirm('Delete "'+p.name+'" permanently? No deals use it.'))return;
+    const {error}=await db.from('products').delete().eq('id',p.id);
+    if(error)return fail(error);
+    closeModal();toast('Product deleted');refresh();
+  });
 }
 
 function resetPwModal(p){
@@ -1415,6 +1476,9 @@ function bindView(){
     const {error}=await db.from('activities').update({done:true}).eq('id',b.dataset.done);
     error?fail(error):(toast('Done ✓'),refresh());});
   $('#adduser')&&($('#adduser').onclick=()=>userModal(null));
+  $('#addproduct')&&($('#addproduct').onclick=()=>productModal(null));
+  document.querySelectorAll('[data-av]').forEach(b=>b.onclick=()=>{adminView=b.dataset.av;render();});
+  document.querySelectorAll('[data-editproduct]').forEach(b=>b.onclick=()=>{const p=cache.products.find(x=>x.id===b.dataset.editproduct);productModal(p);});
   document.querySelectorAll('[data-edituser]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.edituser);userModal(p);});
   document.querySelectorAll('[data-resetpw]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.resetpw);resetPwModal(p);});
   document.querySelectorAll('[data-changeemail]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.changeemail);changeEmailModal(p);});
@@ -1477,7 +1541,7 @@ function dealModal(d){
   const dealerOptsHtml=sel=>'<option value="">— choose —</option>'+cache.dealers.filter(x=>x.status==='active').map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${esc(x.name)} (${esc(x.state||'HQ')}${x.type!=='dealer'?' · '+esc(x.type):''})</option>`).join('');
   const consumerOptsHtml=sel=>'<option value="">— choose —</option>'+(cache.consumers||[]).filter(x=>x.status==='active').map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${esc(x.name)}${x.district?' ('+esc(x.district)+')':''}</option>`).join('');
   const dealerOpts=dealerOptsHtml(d.dealer_id);
-  const prodOpts='<option value="">—</option>'+cache.products.map(p=>`<option value="${p.id}" ${d.product_id===p.id?'selected':''}>${esc(p.category)} — ${esc(p.name)}</option>`).join('');
+  const prodOpts='<option value="">—</option>'+cache.products.filter(p=>p.active||p.id===d.product_id).map(p=>`<option value="${p.id}" ${d.product_id===p.id?'selected':''}>${esc(p.category)} — ${esc(p.name)}</option>`).join('');
   const stateOpts=(isLeader()||me.role==='admin_entry')
     ?'<option value="">HQ / National</option>'+STATES.map(s=>`<option ${d.state===s?'selected':''}>${s}</option>`).join('')
     :`<option selected>${me.state}</option>`;
