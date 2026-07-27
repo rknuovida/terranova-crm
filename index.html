@@ -556,6 +556,9 @@ const inr=n=>n==null?'—':'₹'+Number(n).toLocaleString('en-IN',{maximumFracti
 const dstr=d=>d?new Date(d+(d.length===10?'T00:00:00':'')).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'—';
 const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const monthStartISO=()=>todayISO().slice(0,8)+'01';
+const addMonthsISO=(iso,n)=>{const d=new Date(iso+'T00:00:00');d.setMonth(d.getMonth()+n);return d.toISOString().slice(0,8)+'01';};
+const monthLabel=iso=>new Date(iso+'T00:00:00').toLocaleString('en-GB',{month:'short',year:'numeric'});
+let tgtMonth=monthStartISO();
 function weekStart(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);d.setHours(0,0,0,0);return d;}
 const isLeader=()=>LEADERS.includes(me.role);
 const tstr=ts=>new Date(ts).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
@@ -1219,12 +1222,44 @@ function rTeam(){
 
 /* ===== Admin (leadership only) ===== */
 function rAdmin(){
-  const head=`<div class="pagehead"><div><h2>Admin</h2><div class="sub">${adminView==='team'?'Create users, assign roles &amp; states, change emails, reset passwords, deactivate leavers':'The product list every deal form picks from — add, edit, retire'}</div></div>
-    ${adminView==='team'?'<button class="btn btn-primary btn-sm" id="adduser">+ Add user</button>':'<button class="btn btn-primary btn-sm" id="addproduct">+ Add product</button>'}</div>
+  const subs={team:'Create users, assign roles &amp; states, change emails, reset passwords, deactivate leavers',
+    products:'The product list every deal form picks from — add, edit, retire',
+    targets:'Monthly booking targets per field member — drives the Team &amp; Incentives view'};
+  const head=`<div class="pagehead"><div><h2>Admin</h2><div class="sub">${subs[adminView]}</div></div>
+    ${adminView==='team'?'<button class="btn btn-primary btn-sm" id="adduser">+ Add user</button>':adminView==='products'?'<button class="btn btn-primary btn-sm" id="addproduct">+ Add product</button>':''}</div>
   <div class="custswitch">
     <button class="cbtn ${adminView==='team'?'on':''}" data-av="team">👥 Team &amp; Access</button>
     <button class="cbtn ${adminView==='products'?'on':''}" data-av="products">📦 Products</button>
+    <button class="cbtn ${adminView==='targets'?'on':''}" data-av="targets">🎯 Targets</button>
   </div>`;
+
+  if(adminView==='targets'){
+    const team=cache.profiles.filter(p=>['rsm','asm','sales_executive'].includes(p.role)&&p.status==='active')
+      .sort((a,b)=>(a.state||'').localeCompare(b.state||'')||a.role.localeCompare(b.role)||a.full_name.localeCompare(b.full_name));
+    const months=[addMonthsISO(monthStartISO(),-1),monthStartISO(),addMonthsISO(monthStartISO(),1)];
+    const isCur=tgtMonth===monthStartISO();
+    return head+`<div class="daychips" style="margin:0 0 12px">
+      ${months.map(m=>`<button class="dchip ${m===tgtMonth?'on':''}" data-tm="${m}">${monthLabel(m)}${m===monthStartISO()?' · this month':''}</button>`).join('')}
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        <div class="eyebrow" style="margin:0">Targets for ${monthLabel(tgtMonth)}</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" id="tg_copy">Copy last month</button>
+          <button class="btn btn-primary btn-sm" id="tg_save">Save all</button>
+        </div>
+      </div>
+      ${team.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border)">
+        ${avatarHtml(p,32)}
+        <div style="flex:1;min-width:0"><div style="font-weight:800;font-size:13.5px">${esc(p.full_name)}</div>
+          <div class="small muted">${ROLE_LABEL[p.role]} · ${esc(p.state||'')}${isCur?' · booked '+inr(mtdWonBy(p.id)):''}</div></div>
+        <label style="margin:0;flex:0 0 130px">
+          <input type="number" inputmode="numeric" min="0" step="10000" placeholder="—" data-tuid="${p.id}" data-tstate="${esc(p.state||'')}" style="text-align:right">
+        </label>
+      </div>`).join('')||'<div class="empty">No field team members yet</div>'}
+      <div class="small muted" style="margin-top:10px">Blank = no target for that month. Amounts are ₹ for the whole month.</div>
+    </div>`;
+  }
 
   if(adminView==='products'){
     const prods=[...cache.products].sort((a,b)=>a.category.localeCompare(b.category)||a.sort-b.sort||a.name.localeCompare(b.name));
@@ -1446,6 +1481,41 @@ function shrinkImage(file,max){
   });
 }
 
+/* ---------- targets manager (Admin → Targets) ---------- */
+async function loadTargetsView(){
+  const {data,error}=await db.from('targets').select('*').eq('month',tgtMonth);
+  if(error)return fail(error);
+  window._tgtRows=data||[];
+  document.querySelectorAll('[data-tuid]').forEach(inp=>{
+    const t=(data||[]).find(x=>x.user_id===inp.dataset.tuid);
+    inp.value=t?Math.round(+t.target_amount):'';
+  });
+}
+async function saveTargets(){
+  const ups=[],dels=[];
+  document.querySelectorAll('[data-tuid]').forEach(inp=>{
+    const val=parseFloat(inp.value);
+    const existed=(window._tgtRows||[]).find(x=>x.user_id===inp.dataset.tuid);
+    if(val>0)ups.push({user_id:inp.dataset.tuid,month:tgtMonth,target_amount:val,state:inp.dataset.tstate||null});
+    else if(existed)dels.push(inp.dataset.tuid);
+  });
+  if(ups.length){const {error}=await db.from('targets').upsert(ups,{onConflict:'user_id,month'});if(error)return fail(error);}
+  if(dels.length){const {error}=await db.from('targets').delete().eq('month',tgtMonth).in('user_id',dels);if(error)return fail(error);}
+  toast('Targets for '+monthLabel(tgtMonth)+' saved ✓','win');buzz(8);
+  await loadAll();render();
+}
+async function copyPrevTargets(){
+  const prev=addMonthsISO(tgtMonth,-1);
+  const {data,error}=await db.from('targets').select('*').eq('month',prev);
+  if(error)return fail(error);
+  if(!data||!data.length)return toast('No targets found for '+monthLabel(prev),'err');
+  document.querySelectorAll('[data-tuid]').forEach(inp=>{
+    const t=data.find(x=>x.user_id===inp.dataset.tuid);
+    if(t)inp.value=Math.round(+t.target_amount);
+  });
+  toast('Copied from '+monthLabel(prev)+' — review, then Save all');
+}
+
 /* ---------- view bindings ---------- */
 function bindView(){
   $('#adddeal')&&($('#adddeal').onclick=()=>dealModal(null));
@@ -1479,6 +1549,9 @@ function bindView(){
   $('#addproduct')&&($('#addproduct').onclick=()=>productModal(null));
   document.querySelectorAll('[data-av]').forEach(b=>b.onclick=()=>{adminView=b.dataset.av;render();});
   document.querySelectorAll('[data-editproduct]').forEach(b=>b.onclick=()=>{const p=cache.products.find(x=>x.id===b.dataset.editproduct);productModal(p);});
+  $('#tg_save')&&($('#tg_save').onclick=saveTargets);
+  $('#tg_copy')&&($('#tg_copy').onclick=copyPrevTargets);
+  if(curView==='admin'&&adminView==='targets'&&$('#tg_save'))loadTargetsView();
   document.querySelectorAll('[data-edituser]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.edituser);userModal(p);});
   document.querySelectorAll('[data-resetpw]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.resetpw);resetPwModal(p);});
   document.querySelectorAll('[data-changeemail]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.changeemail);changeEmailModal(p);});
@@ -1498,6 +1571,7 @@ function bindView(){
   });
   document.querySelectorAll('.dchip').forEach(c=>c.onclick=e=>{
     e.stopPropagation();
+    if(c.dataset.tm){tgtMonth=c.dataset.tm;render();return;}
     c.closest('.daychips').querySelectorAll('.dchip').forEach(x=>x.classList.remove('on'));
     c.classList.add('on');
     renderTrailMap(c.dataset.uid,c.dataset.day);
