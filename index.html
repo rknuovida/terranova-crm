@@ -279,8 +279,9 @@ header{position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:
 .segbtn{flex:1;min-height:52px;border:1.5px solid var(--border);background:var(--surface);border-radius:12px;padding:8px 10px;font-size:12.5px;font-weight:800;color:var(--text-2);cursor:pointer;text-align:center;line-height:1.3;-webkit-tap-highlight-color:transparent}
 .segbtn .s2{display:block;font-size:10.5px;font-weight:600;color:var(--text-3);margin-top:2px}
 .segbtn.on{border-color:var(--brand);color:var(--brand-dark);background:rgba(140,198,63,.10)}
-.custswitch{display:flex;gap:8px;margin:0 0 12px}
-.cbtn{min-height:40px;border:1.5px solid var(--border);background:var(--surface);border-radius:999px;padding:0 16px;font-size:12.5px;font-weight:800;color:var(--text-2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.custswitch{display:flex;gap:8px;margin:0 0 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.custswitch::-webkit-scrollbar{display:none}
+.cbtn{min-height:40px;border:1.5px solid var(--border);background:var(--surface);border-radius:999px;padding:0 16px;font-size:12.5px;font-weight:800;color:var(--text-2);cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap;flex-shrink:0}
 .cbtn.on{border-color:var(--brand);color:var(--brand-dark);background:rgba(140,198,63,.10)}
 .qadd{margin:8px 0 4px;padding:12px;border:1.5px dashed var(--brand);border-radius:12px;background:rgba(140,198,63,.06)}
 .qadd .eyebrow{margin-bottom:2px}
@@ -1224,14 +1225,32 @@ function rTeam(){
 function rAdmin(){
   const subs={team:'Create users, assign roles &amp; states, change emails, reset passwords, deactivate leavers',
     products:'The product list every deal form picks from — add, edit, retire',
-    targets:'Monthly booking targets per field member — drives the Team &amp; Incentives view'};
+    targets:'Monthly booking targets per field member — drives the Team &amp; Incentives view',
+    slabs:'The incentive scheme — thresholds and rates the whole team is paid on'};
   const head=`<div class="pagehead"><div><h2>Admin</h2><div class="sub">${subs[adminView]}</div></div>
     ${adminView==='team'?'<button class="btn btn-primary btn-sm" id="adduser">+ Add user</button>':adminView==='products'?'<button class="btn btn-primary btn-sm" id="addproduct">+ Add product</button>':''}</div>
   <div class="custswitch">
     <button class="cbtn ${adminView==='team'?'on':''}" data-av="team">👥 Team &amp; Access</button>
     <button class="cbtn ${adminView==='products'?'on':''}" data-av="products">📦 Products</button>
     <button class="cbtn ${adminView==='targets'?'on':''}" data-av="targets">🎯 Targets</button>
+    <button class="cbtn ${adminView==='slabs'?'on':''}" data-av="slabs">💰 Slabs</button>
   </div>`;
+
+  if(adminView==='slabs'){
+    const slabs=[...cache.slabs].sort((a,b)=>a.threshold-b.threshold);
+    return head+`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+        <div class="eyebrow" style="margin:0">Incentive slabs</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" id="sl_add">+ Add slab</button>
+          <button class="btn btn-primary btn-sm" id="sl_save">Save all</button>
+        </div>
+      </div>
+      <div class="small muted" style="margin-bottom:4px">Cross a threshold in the month and the <b>whole month's bookings</b> earn that rate — highest slab crossed wins. Changes apply to this month's incentives immediately.</div>
+      <div id="slabrows">${slabs.map(s=>slabRowHtml(s)).join('')||slabRowHtml(null)}</div>
+      <div class="small muted" style="margin-top:10px">Leave Label blank to auto-name from the threshold. ✕ removes a slab on Save.</div>
+    </div>`;
+  }
 
   if(adminView==='targets'){
     const team=cache.profiles.filter(p=>['rsm','asm','sales_executive'].includes(p.role)&&p.status==='active')
@@ -1481,6 +1500,38 @@ function shrinkImage(file,max){
   });
 }
 
+/* ---------- incentive slabs editor (Admin → Slabs) ---------- */
+function slabRowHtml(s){s=s||{};
+  return `<div class="slabrow" data-sid="${s.id??''}" style="display:flex;gap:8px;align-items:flex-end;padding:8px 0;border-top:1px solid var(--border)">
+    <label style="margin:0;flex:1;min-width:0">Reach (₹)<input class="sl_thr" type="number" inputmode="numeric" min="0" step="50000" value="${s.threshold?Math.round(+s.threshold):''}" placeholder="500000"></label>
+    <label style="margin:0;flex:1;min-width:0">Rate (%)<input class="sl_rate" type="number" inputmode="decimal" min="0" step="0.01" value="${s.rate?+(+s.rate*100).toFixed(3):''}" placeholder="0.8"></label>
+    <label style="margin:0;flex:1.2;min-width:0">Label<input class="sl_label" value="${esc(s.label||'')}" placeholder="auto"></label>
+    <button type="button" class="btn btn-ghost sl_del" title="Remove slab" style="flex-shrink:0;min-width:40px">✕</button>
+  </div>`;
+}
+function bindSlabDels(){
+  document.querySelectorAll('.sl_del').forEach(b=>b.onclick=()=>{b.closest('.slabrow').remove();});
+}
+async function saveSlabs(){
+  const rows=[...document.querySelectorAll('.slabrow')].map(r=>{
+    const thr=parseFloat(r.querySelector('.sl_thr').value);
+    const rate=parseFloat(r.querySelector('.sl_rate').value);
+    let label=(r.querySelector('.sl_label').value||'').trim();
+    if(!label&&thr>0)label='₹'+(thr%100000===0?(thr/100000):(thr/100000).toFixed(1))+' lakh';
+    return {id:r.dataset.sid?+r.dataset.sid:null,label,threshold:thr,rate:rate/100};
+  }).filter(r=>r.threshold>0&&r.rate>0&&r.label);
+  if(!rows.length&&!confirm('No valid slabs — save an empty scheme (no incentives shown)?'))return;
+  const keepIds=rows.filter(r=>r.id).map(r=>r.id);
+  const dels=cache.slabs.filter(s=>!keepIds.includes(s.id)).map(s=>s.id);
+  const ups=rows.filter(r=>r.id);
+  const ins=rows.filter(r=>!r.id).map(({id,...r})=>r);
+  if(ups.length){const {error}=await db.from('incentive_slabs').upsert(ups);if(error)return fail(error);}
+  if(ins.length){const {error}=await db.from('incentive_slabs').insert(ins);if(error)return fail(error);}
+  if(dels.length){const {error}=await db.from('incentive_slabs').delete().in('id',dels);if(error)return fail(error);}
+  toast('Incentive slabs saved ✓','win');buzz(8);
+  await loadAll();render();
+}
+
 /* ---------- targets manager (Admin → Targets) ---------- */
 async function loadTargetsView(){
   const {data,error}=await db.from('targets').select('*').eq('month',tgtMonth);
@@ -1552,6 +1603,9 @@ function bindView(){
   $('#tg_save')&&($('#tg_save').onclick=saveTargets);
   $('#tg_copy')&&($('#tg_copy').onclick=copyPrevTargets);
   if(curView==='admin'&&adminView==='targets'&&$('#tg_save'))loadTargetsView();
+  $('#sl_save')&&($('#sl_save').onclick=saveSlabs);
+  $('#sl_add')&&($('#sl_add').onclick=()=>{$('#slabrows').insertAdjacentHTML('beforeend',slabRowHtml(null));bindSlabDels();});
+  if($('#slabrows'))bindSlabDels();
   document.querySelectorAll('[data-edituser]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.edituser);userModal(p);});
   document.querySelectorAll('[data-resetpw]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.resetpw);resetPwModal(p);});
   document.querySelectorAll('[data-changeemail]').forEach(b=>b.onclick=()=>{const p=cache.profiles.find(x=>x.id===b.dataset.changeemail);changeEmailModal(p);});
